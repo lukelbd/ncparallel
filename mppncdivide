@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+################################################################################
+# Massively parallel processing NetCDF-file divider
+# Magic function that mimics behavior of mppnccombine by separating
+# files into chunks of latitudes with ncks hyerslabbing. Adds back
+# attributes so that mppnccombine can combine them. Will also slice the
+# file as parallel background processes.
+# NOTE: Why do this? So we can process spectral decompositions in parallel.
+# This is necessary, instead of running on model output parallel files, becuase
+# we need half-day spectral decompositions too.
+# TODO: Re-run spectral file.
+################################################################################
+# Input file
+nsplit=8
+while [ $# -ne 0 ]; do
+  case $1 in
+    -p=*|-n=*) nsplit=${1#*=} ;;
+    -*) echo "Error: Unknown flag ${1}." && exit 1 ;;
+    *)  [ -n "$filename" ] && echo "Error: Got multiple files." && exit 1
+        filename="$1" ;;
+  esac
+  shift
+done
+
+# Split up the file, making sure to add attributes to that mppnccombine
+# can combine it again.

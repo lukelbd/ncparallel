@@ -8,7 +8,10 @@ if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
 set shortmess=aoO
-badd +0 README.md
+badd +1 README.md
+badd +0 Makefile
+badd +0 mppncdivide
+badd +0 mppnccombine.c
 args README.md
 edit README.md
 set splitbelow splitright
@@ -22,16 +25,55 @@ setlocal fdi=#
 setlocal fdl=99
 setlocal fml=1
 setlocal fdn=10
-setlocal fen
+setlocal nofen
 silent! normal! zE
-2,9fold
-let s:l = 6 - ((5 * winheight(0) + 31) / 62)
+let s:l = 9 - ((8 * winheight(0) + 30) / 61)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-6
-normal! 083|
-tabnext 1
+9
+normal! 023|
+tabedit mppncdivide
+set splitbelow splitright
+wincmd t
+set winheight=1 winwidth=1
+argglobal
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=99
+setlocal fml=1
+setlocal fdn=10
+setlocal fen
+silent! normal! zE
+let s:l = 4 - ((3 * winheight(0) + 24) / 49)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+4
+normal! 0
+tabedit mppnccombine.c
+set splitbelow splitright
+wincmd t
+set winheight=1 winwidth=1
+argglobal
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=99
+setlocal fml=1
+setlocal fdn=10
+setlocal fen
+silent! normal! zE
+let s:l = 53 - ((15 * winheight(0) + 24) / 49)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+53
+normal! 019|
+tabnext 2
 if exists('s:wipebuf')
   silent exe 'bwipe ' . s:wipebuf
 endif
