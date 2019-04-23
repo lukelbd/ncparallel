@@ -1,4 +1,4 @@
-# Massively parallel-processed NetCDF tools
+# Parallel processing for large NetCDF files
 This repository documents the GFDL Flexible Modelling System `mppnccombine.c` tool for
 combining massively parallel-processed NetCDF files output by the model
 along the latitude dimension, and introduces a simple shell script `mppncdivide` for dividing
