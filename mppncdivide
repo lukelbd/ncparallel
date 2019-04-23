@@ -8,19 +8,70 @@
 # NOTE: Why do this? So we can process spectral decompositions in parallel.
 # This is necessary, instead of running on model output parallel files, becuase
 # we need half-day spectral decompositions too.
-# TODO: Re-run spectral file.
 ################################################################################
-# Input file
+# Defaults and checks
+dname=lat # can also split along time dimension?
 nsplit=8
+silent=false
+if ! which ncks &>/dev/null; then
+  echo "Error: ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
+  exit 1
+fi
+# Parse args
 while [ $# -ne 0 ]; do
   case $1 in
-    -p=*|-n=*) nsplit=${1#*=} ;;
+    -d=*) dname=${1#*=} ;;
+    -n=*) nsplit=${1#*=} ;;
+    -s) silent=true ;;
     -*) echo "Error: Unknown flag ${1}." && exit 1 ;;
-    *)  [ -n "$filename" ] && echo "Error: Got multiple files." && exit 1
-        filename="$1" ;;
+    *)  [ -n "$filename" ] && echo "Error: Got multiple files." && exit 1; filename="$1" ;;
   esac
   shift
 done
+! [[ "$filename" =~ .nc$ ]] && echo "Error: File does not end in '.nc' extension." && exit 1
+
+# Get dimension size by parsing ncks
+# Could also parse ncdump, but this script requires NCO already so why not
+# See: http://nco.sourceforge.net/nco.html#ncdmnsz
+ndim=$(ncks --trd -m -M "$filename" | grep -E -i ": ${dname}, size =" | cut -f 7 -d ' ' | uniq | xargs)
+if [ -z "$ndim" ]; then
+  echo "Dimension ${dname} not found in filename ${filename}."
+  exit 1
+fi
+if ! [[ $ndim =~ ^[0-9]+$ ]]; then
+  echo "Got invalid size ${ndim} for dimension ${dname}."
+  exit 1
+fi
+if [ $((ndim % nsplit)) -ne 0 ]; then
+  echo "Error: Incompatible dimension size ${ndim} for ${nsplit} splits."
+  exit 1
+fi
 
 # Split up the file, making sure to add attributes to that mppnccombine
 # can combine it again.
+# NumFileInSet
+# domain_decomposition
+for ni in $(seq 1 $nsplit); do
+  file="${filename%.nc}.$(printf "%04d" $((ni-1))).nc"
+  d1=$(((ni - 1)*ndim/nsplit)) # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
+  d2=$((ni*ndim/nsplit - 1)) # e.g. nsplit=10, ndim=200, goes 19, 39, 59
+  { # store attribute as type *short*, i.e. int32
+  ncks -O -h --no-abc -d $dname,$d1,$d2 "$filename" "$file"
+  ncatted -O -h -a domain_decomposition,$dname,o,s,"1,$ndim,$((d1+1)),$((d2+1))" "$filename"
+  ncatted -O -h -a NumFilesInSet,global,o,s,"$nsplit" "$filename"
+  } &
+  pids+=($!)
+  files+=("$file")
+done
+# Verify and exit
+for pid in ${pids[@]}; do
+  wait $pid
+  if [ $? -ne 0 ]; then
+    echo "Error: One of the processes failed."
+    rm "${files[@]}" &>/dev/null # cleanup
+    exit 1
+  fi
+done
+if ! $silent; then
+  echo "${files[@]}"
+fi
