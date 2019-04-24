@@ -27,7 +27,7 @@ Example usage is as follows:
 ncparallel -d=lat -p=8 -n=8 'command -flag1 -flag2 ...' input.nc output.nc
 ```
 The first argument is the script written as you would call it from the command line
-(for example `'./_myscript.py'`), the second argument is the input file, and the
+(for example `'./myscript.py'`), the second argument is the input file, and the
 third argument is the output file.
 Note that **the script must expect an input file and an output file as arguments**.
 
