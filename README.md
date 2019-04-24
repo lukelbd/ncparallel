@@ -15,7 +15,7 @@ Download this utility with
 ```bash
 cd $HOME && git clone https://github.com/lukelbd/ncparallel
 ```
-and add the `nccombine` and `ncdivide` scripts to your path by adding the line
+and add the project to your path by adding the line
 ```bash
 export PATH="$HOME/ncparallel:$PATH"
 ```
