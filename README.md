@@ -19,7 +19,7 @@ and the `-r` flag tells the script to remove the input files after they
 are combined.
 
 The default `mppncdivide` behavior is to divide into `8` files along a latitude
-dimension named `lat`. The default `mppnccombine` behavior is to not delete the input files.
+dimension named `lat`. The default `mppnccombine` behavior is to not remove the input files.
 
 ```bash
 #!/usr/bin/env bash
