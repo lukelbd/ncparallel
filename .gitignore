@@ -3,3 +3,5 @@
 .*.sw[a-z]
 # Datasets
 *.nc
+# Binary
+*.x
