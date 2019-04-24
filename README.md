@@ -1,6 +1,6 @@
 # Overview
 This repository introduces simple shell scripts,
-`mppnccombine` and `mppncdivide`, for dividing
+`nccombine` and `ncdivide`, for dividing
 and combining existing NetCDF files along an **arbitrary dimension** so that the resulting,
 much smaller files can be processed **in parallel** and recombined. This is great where
 your computation bottleneck is RAM due to massive file sizes.
@@ -11,21 +11,26 @@ Also see the [`mppnccombine-fast.c`](https://github.com/coecms/mppnccombine-fast
 Ocean Modelling system.
 
 # Usage
-A sample script is provided below. For `mppncdivide`, the `-d` flag is used to specify the dimension along which
+Download this utility with `cd $HOME && git clone https://github.com/lukelbd/ncparallel`, and add the `nccombine` and
+`ncdivide` scripts to your path by adding the line `export PATH="$HOME/ncparallel:$PATH"` to your shell configuration
+files (usually named `$HOME/.bashrc` or `$HOME/.bash_profile`; if it does not exist, you can create it, and its
+contents should be run every time you open up a terminal).
+
+The below sample script demonstrates how to use this tool. For `ncdivide`, the `-d` flag is used to specify the dimension along which
 the file is divided, and the `-n` flag is used to specify the number of files into which we want
-to divide the input file. For `mppnccombine`, the first argument is the destination file, the next arguments
+to divide the input file. For `nccombine`, the first argument is the destination file, the next arguments
 are the input files,
 and the `-r` flag tells the script to remove the input files after they
 are combined.
 
-The default `mppncdivide` behavior is to divide into `8` files along a latitude
-dimension named `lat`. The default `mppnccombine` behavior is to not remove the input files.
+The default `ncdivide` behavior is to divide into `8` files along a latitude
+dimension named `lat`. The default `nccombine` behavior is to not remove the input files.
 
 ```bash
 #!/usr/bin/env bash
 # Divide
-files=($(./mppncdivide -d=lat -n=8 input.nc))
-[ $? -ne 0 ] && echo "Error: mppncdivide failed." && exit 1
+files=($(./ncdivide -d=lat -n=8 input.nc))
+[ $? -ne 0 ] && echo "Error: ncdivide failed." && exit 1
 # Next run some command on each file in parallel
 # Also store the process IDs so we can use 'wait' to check their exit
 # statuses individually!
@@ -42,6 +47,6 @@ for pid in ${pids[@]}; do
   fi
 done
 # Finally combine, and remove the temporary files
-./mppnccombine -r output.nc "${files[@]}"
-[ $? -ne 0 ] && echo "Error: mppnccombine failed." && exit 1
+./nccombine -r output.nc "${files[@]}"
+[ $? -ne 0 ] && echo "Error: nccombine failed." && exit 1
 ```
