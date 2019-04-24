@@ -26,18 +26,18 @@ Example usage is as follows:
 ```bash
 ncparallel -d=lat -p=8 -n=8 'command -flag1 -flag2 ...' input.nc output.nc
 ```
-The first argument is the script written as you would call it from the command line,
-for example `'./get_fluxes.py'`.
-Note that **the script must expect an input file and an output file as arguments**. The last second
-and third arguments are these two files.
+The first argument is the script written as you would call it from the command line
+(for example `'./_myscript.py'`), the second argument is the input file, and the
+third argument is the output file.
+Note that **the script must expect an input file and an output file as arguments**.
 
 The optional flags are as follows:
 
+* `-s`: If passed, silent mode is enabled.
+* `-k`: If passed, temporary files are kept (i.e. not deleted).
 * `-d=dname`: The dimension name along which we split the file.
 * `-n=nfiles`: The number of files to generate.
-* `-p=nparallel`: The maximum number of parallel processes. This can be less than `nfiles`, and may be useful for large files.
-* `-k`: Whether to keep all temporary files.
-* `-s`: Silent mode.
+* `-p=nparallel`: The maximum number of parallel processes. This can be less than `nfiles`.
 
 The default behavior is to divide into `8` files along a latitude
 dimension named `lat` and run `8` parallel processes.
