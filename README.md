@@ -13,7 +13,8 @@ Ocean Modelling system.
 # Usage
 A sample script is provided below. The `-d` flag is used to specify the dimension along which
 the file is divided, and the `-n` flag is used to specify the number of files into which we want
-to divide the input file. The default behavior is to divide into 8 files along the latitude dimension.
+to divide the input file. The default behavior is to divide into `8` files along a latitude
+dimension named `lat`.
 
 ```bash
 #!/usr/bin/env bash
