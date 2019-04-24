@@ -41,7 +41,7 @@ The flags are as follows:
 * `-s`: If passed, silent mode is enabled.
 * `-k`: If passed, 'keep mode' is enabled and temporary files are not deleted.
 * `-d=dname`: The dimension name along which we split the file.
-* `-n=nfiles`: The number of file splits to make.
+* `-n=nfiles`: The number of file pieces to generate
 * `-p=nparallel`: The maximum number of parallel processes. This defaults to `nfiles` but can also be less than `nfiles`, which is useful for processing huge files.
 
 The default behavior is to divide into `8` files along a latitude
