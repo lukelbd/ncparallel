@@ -43,6 +43,7 @@ for file in "${files[@]}"; do
   outputs+=("$output") # store output files in a bash array
   pids+=($!) # store process IDs in another bash array
 done
+# Make sure all commands were successful
 for pid in ${pids[@]}; do
   wait $pid
   if [ $? -ne 0 ]; then
