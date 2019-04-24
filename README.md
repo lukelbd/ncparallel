@@ -28,7 +28,9 @@ ncparallel -d=lat -p=8 -n=8 script input.nc output.nc
 ```
 The first argument is the script written as you would call it from the command line
 (for example `'./myscript.py'`), the second argument is the input file, and the
-third argument is the output file. Parallel processing is achieved by splitting
+third argument is the output file.
+
+Parallel processing is achieved by splitting
 the input file into pieces named (in this case) `input.0000.nc`, `input.0001.nc`, etc.,
 calling the input script with (in this case) `script input.0000.nc output.0000.nc`
 in parallel for each input file piece, then combining the resulting `output.0000.nc`, `output.0001.nc`, etc. files and deleting the remnants.
