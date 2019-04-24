@@ -7,7 +7,7 @@
 ################################################################################
 # Defaults and checks
 fix=false
-dname=time # can also split along time dimension?
+dname=lat # can also split along time dimension?
 nsplit=8
 silent=false
 if ! which ncks &>/dev/null; then
