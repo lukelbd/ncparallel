@@ -39,7 +39,7 @@ Note that **the script must accept an input file and an output file as arguments
 The flags are as follows:
 
 * `-s`: If passed, silent mode is enabled.
-* `-k`: If passed, temporary files are kept (i.e. not deleted).
+* `-k`: If passed, 'keep mode' is enabled and temporary files are not deleted.
 * `-d=dname`: The dimension name along which we split the file.
 * `-n=nfiles`: The number of file splits to make.
 * `-p=nparallel`: The maximum number of parallel processes. This defaults to `nfiles` but can also be less than `nfiles`, which is useful for processing huge files.
