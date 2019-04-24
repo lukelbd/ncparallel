@@ -32,11 +32,13 @@ dimension named `lat`. The default `nccombine` behavior is to not remove the inp
 files=($(./ncdivide -d=lat -n=8 input.nc))
 [ $? -ne 0 ] && echo "Error: ncdivide failed." && exit 1
 # Next run some command on each file in parallel
-# Also store the process IDs so we can use 'wait' to check their exit
-# statuses individually!
+# WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
+# attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
 for file in "${files[@]}"; do
-  <command> "$file" &
-  pids+=($!)
+  output=output.${file#*.} # e.g. becomes result.0000.nc
+  <command> "$file" "$output" &
+  outputs+=($output) # store output files in a bash array
+  pids+=($!) # store process IDs in another bash array
 done
 for pid in ${pids[@]}; do
   wait $pid
@@ -47,6 +49,8 @@ for pid in ${pids[@]}; do
   fi
 done
 # Finally combine, and remove the temporary files
-./nccombine -r output.nc "${files[@]}"
+# generated for parallel processing
+rm "${files[@]}"
+./nccombine -r output.nc "${outputs[@]}"
 [ $? -ne 0 ] && echo "Error: nccombine failed." && exit 1
 ```
