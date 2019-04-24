@@ -23,7 +23,7 @@ to your shell configuration file, usually named `$HOME/.bashrc` or `$HOME/.bash_
 does not exist, you can create it, and its contents should be run every time you open up a terminal.
 
 # Usage
-Below is example usage:
+The usage is as follows:
 ```bash
 ncparallel -r -d=lat -n=8 'command -flag1 -flag2' input.nc output.nc
 ```
