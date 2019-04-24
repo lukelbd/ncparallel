@@ -1,8 +1,9 @@
 # Overview
 This repository introduces simple shell scripts,
 `mppnccombine` and `mppncdivide`, for dividing
-and combining existing NetCDF files along an **arbitrary dimension** latitude dimension so that the resulting,
-much smaller files can be processed in parallel and recombined.
+and combining existing NetCDF files along an **arbitrary dimension** so that the resulting,
+much smaller files can be processed **in parallel** and recombined. This is great where
+your computation bottleneck is RAM due to massive file sizes.
 
 This project uses the highly underrated GFDL Flexible Modelling System `mppnccombine.c` tool for
 combining datasets along non-record dimensions.
