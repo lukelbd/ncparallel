@@ -33,8 +33,8 @@ dimension named `lat`. The default `nccombine` behavior is to not remove the inp
 files=($(./ncdivide -d=lat -n=8 input.nc))
 [ $? -ne 0 ] && echo "Error: ncdivide failed." && exit 1
 
-# Next run some background process on each file, for example a python script
-# that generates a new NetCDF file.
+# Generate background processes for each file, for example a python script
+# that creates a new NetCDF file from some input NetCDF file.
 # WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
 # attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
 for file in "${files[@]}"; do
