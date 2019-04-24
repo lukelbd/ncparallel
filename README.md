@@ -22,19 +22,23 @@ to your shell configuration file, usually named `$HOME/.bashrc` or `$HOME/.bash_
 does not exist, you can create it, and its contents should be run every time you open up a terminal.
 
 # Usage
-The usage is as follows:
+Example usage is as follows:
 ```bash
-ncparallel -r -d=lat -n=8 'command -flag1 -flag2' input.nc output.nc
+ncparallel -d=lat -p=8 -n=8 'command -flag1 -flag2 ...' input.nc output.nc
 ```
 The first argument is the script written as you would call it from the command line,
 for example `'./get_fluxes.py'`.
 Note that **the script must expect an input file and an output file as arguments**. The last second
 and third arguments are these two files.
 
-The `-r` flag says to remove all temporary files.
-The `-d` flag is used to specify the dimension along which
-the file is divided. The `-n` flag is used to specify the number of files into which we want
-to divide the input file.
+The optional flags are as follows:
+
+* `-d=dname`: The dimension name along which we split the file.
+* `-n=nfiles`: The number of files to generate.
+* `-p=nparallel`: The maximum number of parallel processes. This can be less than `nfiles`, and may be useful for large files.
+* `-k`: Whether to keep all temporary files.
+* `-s`: Silent mode.
+
 The default behavior is to divide into `8` files along a latitude
-dimension named `lat`, and to not remove any temporary files.
+dimension named `lat` and run `8` parallel processes.
 

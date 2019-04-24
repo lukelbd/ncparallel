@@ -4,16 +4,23 @@
 # Usage: ./ncparallel 'command' input output
 ################################################################################
 # Get arguments
-remove=false
+keep=false
+dname=lat # can also split along time dimension?
+nsplit=8
+silent=false
 while [ $# -ne 0 ]; do
   case "$1" in
-    -[nd]=*) flags+="$1 " ;;
-    -r) remove=true ;;
+    -n=*) nsplit="${1#*=}" ;;
+    -d=*) dname="${1#*=}" ;;
+    -p=*) pmax="${1#*=}" ;;
+    -k) keep=true ;;
+    -s) silent=true ;;
     -*) echo "Error: Unknown argument ${1}." && exit 1 ;;
     *) args+=("$1") ;;
   esac
   shift
 done
+[ -z "$pmax" ] && pmax=$nsplit # same as number of files
 # Checks
 if [ ${#args[@]} -ne 3 ]; then
   echo "Error: Usage is ncparallel 'command' 'input.nc' 'output.nc', where command is any command that accepts an input file and saves data to an output file."
@@ -26,15 +33,32 @@ output="${args[2]}"
 
 # Divide into smaller files and collect names in a bash array
 # Format will be input.0000.nc, input.0001.nc, etc.
-echo "Dividing file: $input"
-inputs=($($dir/ncdivide $flags "$input"))
+t=$(date +%s)
+$silent || echo "Dividing file: ${input##*/}"
+inputs=($($dir/ncdivide -n=$nsplit -d=$dname "$input"))
 [ $? -ne 0 ] && echo "Error: ncdivide failed." && exit 1
+$silent || echo "Elapsed time: $(($(date +%s) - t))s."
+
+# Function that waits for background processes to finish, and makes
+# sure they were all successful
+pwait() {
+  for pid in $@; do
+    wait $pid
+    if [ $? -ne 0 ]; then
+      echo "Error: One of the processes failed."
+      exit 1
+    fi
+  done
+}
 
 # Generate background processes for each file, for example a python script
 # that creates a new NetCDF file from some input NetCDF file.
 # WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
 # attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
-echo "Running $cmd"
+i=1
+t=$(date +%s)
+$silent || echo "Running $cmd"
+$silent || echo "Input files: ${inputs[@]##*/}"
 for ifile in "${inputs[@]}"; do
   prefix="${output%.nc}" # just trim the extension
   suffix="${ifile:${#ifile}-7}" # 0000.nc, 0001.nc, etc.
@@ -42,24 +66,24 @@ for ifile in "${inputs[@]}"; do
   $cmd "$ifile" "$ofile" &>/dev/null & # trailing ampersand sends process to background
   outputs+=("$ofile") # store output files in a bash array
   pids+=($!) # store process IDs in another bash array
-done
-echo "Input files: ${inputs[@]}"
-echo "Output files: ${outputs[@]}"
-
-# Wait for background processes to finish, and make sure they were all successful
-for pid in ${pids[@]}; do
-  wait $pid
-  if [ $? -ne 0 ]; then
-    echo "Error: One of the processes failed."
-    exit 1
+  if [ $i -eq $pmax ]; then
+    i=1; pwait ${pids[@]}
+    unset pids
+  else
+    let i+=1
   fi
 done
+pwait ${pids[@]}
+$silent || echo "Output files: ${outputs[@]##*/}"
+$silent || echo "Elapsed time: $(($(date +%s) - t))s."
 
 # Finally combine, and remove the temporary files
 # generated for parallel processing
-echo "Combining into file: $output"
-$dir/nccombine -r "$output" "${outputs[@]}"
+t=$(date +%s)
+$silent || echo "Combining into file: ${output##*/}"
+$dir/nccombine "$output" "${outputs[@]}"
 [ $? -ne 0 ] && echo "Error: nccombine failed." && exit 1
-if $remove; then
+if ! $keep; then
   rm "${outputs[@]}" "${inputs[@]}"
 fi
+$silent || echo "Elapsed time: $(($(date +%s) - t))s."
