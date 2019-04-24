@@ -4,7 +4,6 @@
 # work for files split along an *unlimited* dimension e.g. 'time'
 ################################################################################
 # Defaults and checks
-remove=false
 silent=false
 if ! which ncks &>/dev/null; then
   echo "Error: ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
@@ -13,7 +12,6 @@ fi
 # Parse args
 while [ $# -ne 0 ]; do
   case $1 in
-    -r) remove=true ;;
     -s) silent=true ;;
     -*) echo "Error: Unknown flag ${1}." && exit 1 ;;
     *)  [ -z "$filename" ] && filename="$1" || files+=("$1") ;;
@@ -60,10 +58,7 @@ else
   ./mppnccombine.x "$filename" "${files[@]}"
   [ $? -ne 0 ] && echo "Error: mppnccombine.x failed." && exit 1
 fi
-# Remove old files
-if $remove; then
-  rm "${files[@]}"
-fi
+# Message
 if ! $silent; then
   echo "$filename"
 fi
