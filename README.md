@@ -31,7 +31,7 @@ The first argument is the script written as you would call it from the command l
 third argument is the output file.
 Note that **the script must expect an input file and an output file as arguments**.
 
-The optional flags are as follows:
+The flags are as follows:
 
 * `-s`: If passed, silent mode is enabled.
 * `-k`: If passed, temporary files are kept (i.e. not deleted).
