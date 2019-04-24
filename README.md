@@ -1,7 +1,6 @@
 # Overview
-This repository introduces simple shell scripts,
-`ncparallel`, `nccombine`, `ncdivide`, for 
-running an arbitrary script or function on a NetCDF file **in parallel** by
+This repository introduces the shell scripts `ncparallel` for
+running an arbitrary script on a NetCDF file **in parallel** by
 dividing and combining the NetCDF file along an **arbitrary dimension**.
 This is great where your computation bottleneck is RAM due to large file sizes.
 
