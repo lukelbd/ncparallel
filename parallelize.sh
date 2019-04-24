@@ -11,6 +11,8 @@ files=($(./mppncdivide "$@"))
 if [ $? -ne 0 ]; then
   echo "Error: mppncdivide failed"
 fi
+# Parse args
+cmd=
 # Next run some command on each file in parallel
 # Insert command here
 for file in "${files[@]}"; do

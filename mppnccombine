@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+################################################################################
+# Function that expands functionality of mppnccombine, to also
+# work for files split along an *unlimited* dimension e.g. 'time'
+################################################################################
+# Defaults and checks
+remove=false
+silent=false
+if ! which ncks &>/dev/null; then
+  echo "Error: ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
+  exit 1
+fi
+# Parse args
+while [ $# -ne 0 ]; do
+  case $1 in
+    -r) remove=true ;;
+    -s) silent=true ;;
+    -*) echo "Error: Unknown flag ${1}." && exit 1 ;;
+    *)  [ -z "$filename" ] && filename="$1" || files+=("$1") ;;
+  esac
+  shift
+done
+[ -z "$files" ] && echo "Error: No input files found." && exit 1
+! [[ "$filename" =~ .nc$ ]] && echo "Error: File $filename does not end in '.nc' extension." && exit 1 # output file
+# Get the concatenation dimension
+for file in "${files[@]}"; do
+  iname=$(ncdump -h "${files[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
+  if [ -z "$iname" ]; then
+    echo "Error: File $file does not have dimension with domain_decomposition attribute."
+    exit 1
+  elif [ -n "$dname" ] && [ "$dname" != "$iname" ]; then
+    echo "Error: File $file has different domain_decomposition dimension, ${iname}, from dimension from previous file, ${dname}."
+    exit 1
+  fi
+  dname=$iname
+done
+# Test whether concatenation dimension is unlimited
+ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dname &>/dev/null
+[ $? -eq 0 ] && unlimited=true || unlimited=false
+
+# Combine files in one of two ways
+# Found out that mppnccombine is *slower* than ncrcat! So if possible, always
+# use ncrcat and do not fix unlimited dimensions!
+# ./mppncdivide -f -d=time test.nc; rm tmp.nc; time ./mppnccombine.x tmp.nc test.*.nc
+# ./mppncdivide -d=time test.nc; rm tmp.nc; time ncrcat -O test.*.nc tmp.nc
+rm "$filename" 2>/dev/null
+if $unlimited; then
+  if ! which ncrcat &>/dev/null; then
+    echo "Error: ncrcat not found, mppnccombine requires the NetCDF Operators (NCO) tools."
+    exit 1
+  fi
+  ncrcat -O "${files[@]}" "$filename"
+# Combine with mppnccombine
+else
+  if ! which ./mppnccombine.x &>/dev/null; then
+    echo "Error: ./mppnccombine.x executable not found. You must compile mppnccombine.c with the make.sh script."
+    exit 1
+  fi
+  ./mppnccombine.x "$filename" "${files[@]}"
+fi
+# Remove old files
+if $remove; then
+  rm "${files[@]}"
+fi
+if ! $silent; then
+  echo "$filename"
+fi
