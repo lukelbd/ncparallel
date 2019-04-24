@@ -25,9 +25,7 @@ dimension named `lat`. The default `mppnccombine` behavior is to not remove the 
 #!/usr/bin/env bash
 # Divide
 files=($(./mppncdivide -d=lat -n=8 input.nc))
-if [ $? -ne 0 ]; then
-  echo "Error: mppncdivide failed"
-fi
+[ $? -ne 0 ] && echo "Error: mppncdivide failed." && exit 1
 # Next run some command on each file in parallel
 # Also store the process IDs so we can use 'wait' to check their exit
 # statuses individually!
@@ -45,4 +43,5 @@ for pid in ${pids[@]}; do
 done
 # Finally combine, and remove the temporary files
 ./mppnccombine -r output.nc "${files[@]}"
+[ $? -ne 0 ] && echo "Error: mppnccombine failed." && exit 1
 ```

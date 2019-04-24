@@ -70,7 +70,7 @@ done
 for pid in ${pids[@]}; do
   wait $pid
   if [ $? -ne 0 ]; then
-    echo "Error: One of the processes failed."
+    echo "Error: At least one of the ncks processes failed."
     rm "${files[@]}" &>/dev/null # cleanup
     exit 1
   fi
