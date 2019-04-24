@@ -11,10 +11,15 @@ Also see the [`mppnccombine-fast.c`](https://github.com/coecms/mppnccombine-fast
 Ocean Modelling system.
 
 # Usage
-A sample script is provided below. The `-d` flag is used to specify the dimension along which
+A sample script is provided below. For `mppncdivide`, the `-d` flag is used to specify the dimension along which
 the file is divided, and the `-n` flag is used to specify the number of files into which we want
-to divide the input file. The default behavior is to divide into `8` files along a latitude
-dimension named `lat`.
+to divide the input file. For `mppnccombine`, the first argument is the destination file, the next arguments
+are the input files,
+and the `-r` flag tells the script to remove the input files after they
+are combined.
+
+The default `mppncdivide` behavior is to divide into `8` files along a latitude
+dimension named `lat`. The default `mppnccombine` behavior is to not delete the input files.
 
 ```bash
 #!/usr/bin/env bash
