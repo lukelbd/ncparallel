@@ -35,9 +35,9 @@ files=($(./ncdivide -d=lat -n=8 input.nc))
 # WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
 # attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
 for file in "${files[@]}"; do
-  output=output.${file#*.} # e.g. becomes result.0000.nc
+  output="output.${file#*.}" # e.g. becomes result.0000.nc
   <command> "$file" "$output" &
-  outputs+=($output) # store output files in a bash array
+  outputs+=("$output") # store output files in a bash array
   pids+=($!) # store process IDs in another bash array
 done
 for pid in ${pids[@]}; do
