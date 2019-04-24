@@ -29,8 +29,8 @@ ncparallel -r -d=lat -n=8 'command -flag1 -flag2' input.nc output.nc
 ```
 The first argument is the script written as you would call it from the command line,
 for example `'./get_fluxes.py'`.
-Note that **the script must expect two arguments**: an input file, and an output file.
-The second and third arguments are the input and output files.
+Note that **the script must expect an input file and an output file as arguments**. The last second
+and third arguments are these two files.
 
 The `-r` flag says to remove all temporary files.
 The `-d` flag is used to specify the dimension along which
