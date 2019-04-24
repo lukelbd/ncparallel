@@ -7,33 +7,44 @@
 remove=false
 while [ $# -ne 0 ]; do
   case "$1" in
-    -[nd]=*) flags+="$1 "
+    -[nd]=*) flags+="$1 " ;;
     -r) remove=true ;;
+    -*) echo "Error: Unknown argument ${1}." && exit 1 ;;
+    *) args+=("$1") ;;
   esac
+  shift
 done
+# Checks
 if [ ${#args[@]} -ne 3 ]; then
   echo "Error: Usage is ncparallel 'command' 'input.nc' 'output.nc', where command is any command that accepts an input file and saves data to an output file."
   exit 1
 fi
-cmd="$1"
-input="$2"
-output="$3"
+dir=${0%/*}
+cmd="${args[0]}"
+input="${args[1]}"
+output="${args[2]}"
+
 # Divide into smaller files and collect names in a bash array
 # Format will be input.0000.nc, input.0001.nc, etc.
-dir=${0%/*}
-inputs=($($dir/ncdivide -d=lat -n=8 "$input"))
+echo "Dividing file: $input"
+inputs=($($dir/ncdivide $flags "$input"))
 [ $? -ne 0 ] && echo "Error: ncdivide failed." && exit 1
 
 # Generate background processes for each file, for example a python script
 # that creates a new NetCDF file from some input NetCDF file.
 # WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
 # attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
-for file in "${inputs[@]}"; do
-  output="output.${file#*.}" # e.g. if 'file' is input.0000.nc, becomes output.0000.nc
-  $cmd "$file" "$output" & # trailing ampersand sends process to background
-  outputs+=("$output") # store output files in a bash array
+echo "Running $cmd"
+for ifile in "${inputs[@]}"; do
+  prefix="${output%.nc}" # just trim the extension
+  suffix="${ifile:${#ifile}-7}" # 0000.nc, 0001.nc, etc.
+  ofile="${prefix}.${suffix}"
+  $cmd "$ifile" "$ofile" &>/dev/null & # trailing ampersand sends process to background
+  outputs+=("$ofile") # store output files in a bash array
   pids+=($!) # store process IDs in another bash array
 done
+echo "Input files: ${inputs[@]}"
+echo "Output files: ${outputs[@]}"
 
 # Wait for background processes to finish, and make sure they were all successful
 for pid in ${pids[@]}; do
@@ -46,7 +57,8 @@ done
 
 # Finally combine, and remove the temporary files
 # generated for parallel processing
-$dir/nccombine -r output.nc "${outputs[@]}"
+echo "Combining into file: $output"
+$dir/nccombine -r "$output" "${outputs[@]}"
 [ $? -ne 0 ] && echo "Error: nccombine failed." && exit 1
 if $remove; then
   rm "${outputs[@]}" "${inputs[@]}"
