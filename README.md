@@ -1,4 +1,4 @@
-# mppnc
+# Overview
 This repository introduces the simple shell scripts
 `mppnccombine` and `mppncdivide` for dividing
 and combining existing NetCDF files along an **arbitrary dimension** latitude dimension so that the resulting,
