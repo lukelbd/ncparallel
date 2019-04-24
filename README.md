@@ -44,7 +44,7 @@ for file in "${files[@]}"; do
   pids+=($!) # store process IDs in another bash array
 done
 
-# Wait for parallel processes to finish, and make sure they were all successful
+# Wait for background processes to finish, and make sure they were all successful
 for pid in ${pids[@]}; do
   wait $pid
   if [ $? -ne 0 ]; then
