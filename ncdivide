@@ -5,20 +5,17 @@
 # attributes so that mppnccombine can combine them. Will also slice the
 # file as parallel background processes.
 ################################################################################
-# Defaults and checks
+# Get arguments
 fix=false
 dname=lat # can also split along time dimension?
 nsplit=8
 silent=false
-if ! which ncks &>/dev/null; then
-  echo "Error: ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
-  exit 1
-fi
-# Parse args
+source header.sh
 while [ $# -ne 0 ]; do
   case $1 in
     -d=*) dname=${1#*=} ;;
     -n=*) nsplit=${1#*=} ;;
+    -p=*) pmax=${1#*=} ;;
     -f) fix=true ;; # fix record dimension?
     -s) silent=true ;;
     -*) echo "Error: Unknown flag ${1}." && exit 1 ;;
@@ -26,7 +23,9 @@ while [ $# -ne 0 ]; do
   esac
   shift
 done
+[ -z "$pmax" ] && pmax=$nsplit # same as number of files
 ! [[ "$filename" =~ .nc$ ]] && echo "Error: File does not end in '.nc' extension." && exit 1
+! which ncks &>/dev/null && echo "Error: ncks not found, ncdivide requires the NetCDF Operators (NCO) tools." && exit 1
 
 # Get dimension size by parsing ncks
 # Could also parse ncdump, but this script requires NCO already so why not
@@ -45,14 +44,16 @@ if [ $((ndim % nsplit)) -ne 0 ]; then
   exit 1
 fi
 
-# Split up the file, making sure to add attributes to that mppnccombine
-# can combine it again.
-# WARNING: The attributes must be long type, not short
+# Optionally fix record dimension
 if $fix; then
   ncdump -h $filename | grep 'UNLIMITED' | grep $dname &>/dev/null
   [ $? -eq 0 ] && unlimited=true || unlimited=false
   $unlimited && flag="--fix_rec_dmn $dname" # required for mppnccombine
 fi
+# Split up the file, making sure to add attributes to that mppnccombine
+# can combine it again.
+# WARNING: The attributes must be long type, not short
+i=1
 for ni in $(seq 1 $nsplit); do
   file="${filename%.nc}.$(printf "%04d" $((ni-1))).nc"
   d1=$(((ni - 1)*ndim/nsplit)) # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
@@ -65,16 +66,12 @@ for ni in $(seq 1 $nsplit); do
   } &
   pids+=($!)
   files+=("$file")
-done
-# Verify and exit
-for pid in ${pids[@]}; do
-  wait $pid
-  if [ $? -ne 0 ]; then
-    echo "Error: At least one of the ncks processes failed."
-    rm "${files[@]}" &>/dev/null # cleanup
-    exit 1
+  if [ $i -eq $pmax ]; then
+    i=1; pwait ${pids[@]}
+    unset pids
+  else
+    let i+=1
   fi
 done
-if ! $silent; then
-  echo "${files[@]}"
-fi
+# Verify and exit
+$silent || echo "${files[@]}"

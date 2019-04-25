@@ -28,14 +28,16 @@ ncparallel -d=lat -p=8 -n=32 script input.nc output.nc
 ```
 Flags are as follows:
 
-* `-s`: If passed, silent mode is enabled.
-* `-k`: If passed, temporary files are not deleted.
 * `-d=<>`: The dimension name along which we split the file.
 * `-n=<>`: The number of file pieces to generate.
 * `-p=<>`: The maximum number of parallel processes. This defaults to the `-n` argument but can also be smaller.
+* `-f`: If passed and dimension is a "record" (i.e. unlimited) dimension, it is changed to fixed length.
+* `-s`: If passed, silent mode is enabled.
+* `-k`: If passed, temporary files are not deleted.
 
-The first positional argument is the script written as you would call it from the command line
-(for example `'./myscript.py'`), the second argument is the input file, and the
+The first positional argument is the script or command written as you would type it into the command line
+(for example, `'python myscript.py'` or `'ncap2 -s "math-goes-here"'`; note the quotation marks),
+the second argument is the input file, and the
 third argument is the output file.
 
 Parallel processing is achieved by splitting

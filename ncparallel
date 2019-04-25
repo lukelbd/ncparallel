@@ -8,11 +8,13 @@ keep=false
 dname=lat # can also split along time dimension?
 nsplit=8
 silent=false
+source header.sh
 while [ $# -ne 0 ]; do
   case "$1" in
     -n=*) nsplit="${1#*=}" ;;
     -d=*) dname="${1#*=}" ;;
     -p=*) pmax="${1#*=}" ;;
+    -f) flags="-f" ;;
     -k) keep=true ;;
     -s) silent=true ;;
     -*) echo "Error: Unknown argument ${1}." && exit 1 ;;
@@ -21,11 +23,7 @@ while [ $# -ne 0 ]; do
   shift
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-# Checks
-if [ ${#args[@]} -ne 3 ]; then
-  echo "Error: Usage is ncparallel 'command' 'input.nc' 'output.nc', where command is any command that accepts an input file and saves data to an output file."
-  exit 1
-fi
+[ ${#args[@]} -ne 3 ] && echo "Error: Usage is ncparallel 'command' 'input.nc' 'output.nc', where command is any command that accepts an input file and saves data to an output file." && exit 1
 dir=${0%/*}
 cmd="${args[0]}"
 input="${args[1]}"
@@ -33,23 +31,12 @@ output="${args[2]}"
 
 # Divide into smaller files and collect names in a bash array
 # Format will be input.0000.nc, input.0001.nc, etc.
+# TODO: Divide up to n blocks
 t=$(date +%s)
 $silent || echo "Dividing file: ${input##*/}"
-inputs=($($dir/ncdivide -n=$nsplit -d=$dname "$input"))
+inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dname $flags "$input"))
 [ $? -ne 0 ] && echo "Error: ncdivide failed." && exit 1
 $silent || echo "Elapsed time: $(($(date +%s) - t))s."
-
-# Function that waits for background processes to finish, and makes
-# sure they were all successful
-pwait() {
-  for pid in $@; do
-    wait $pid
-    if [ $? -ne 0 ]; then
-      echo "Error: One of the processes failed."
-      exit 1
-    fi
-  done
-}
 
 # Generate background processes for each file, for example a python script
 # that creates a new NetCDF file from some input NetCDF file.
