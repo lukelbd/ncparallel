@@ -36,14 +36,14 @@ Flags are as follows:
 
 The first positional argument is the script written as you would call it from the command line
 (for example `'./myscript.py'`), the second argument is the input file, and the
-third argument is the output file.
+third argument is the output file. Note that **the script must accept an input file and an output file as arguments**.
 
 Parallel processing is achieved by splitting
 the input file along some dimension into pieces named (in this case) `input.0000.nc`, `input.0001.nc`, etc.,
 calling the input script with (in this case) `script input.0000.nc output.0000.nc`
-for each piece, then combining the resulting `output.0000.nc`, `output.0001.nc`, etc. files and deleting the remnants. Note that **the script must accept an input file and an output file as arguments**.
+for each piece, then combining the resulting `output.0000.nc`, `output.0001.nc`, etc. files and deleting the remnants.
 
-Note that if you **do not** want parallel processing, and instead just want to 
+If you do not want parallel processing and instead just want to 
 split up the file into more manageable pieces for your script,
 simply use `-n=1`. This can be very useful for large file sizes!
 
