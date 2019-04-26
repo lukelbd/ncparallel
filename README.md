@@ -57,8 +57,8 @@ Note that the script must accept an input file and an output file as arguments.
 If you do not want parallel processing and instead just want to 
 split up the file into more manageable pieces for your script,
 simply use `-n=1`.
-As explained above, this is very useful for large file sizes
-and scripts limited by available memory.
+As explained above, this is very useful for large file sizes, i.e.
+when your script execution time is limited by available memory.
 <!-- your file size is such that
    - the bottleneck in your execution time is due to memory limitations. -->
 
