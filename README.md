@@ -1,13 +1,23 @@
-# Overview
+# What
 This repository introduces the shell script `ncparallel` for
 running an arbitrary script on a NetCDF file **in parallel** by
 dividing and combining the NetCDF file along an **arbitrary dimension**.
-<!-- This is great where your computation bottleneck is RAM due to large file sizes. -->
 
 This project uses the highly underrated GFDL Flexible Modelling System `mppnccombine.c` tool for
 combining datasets along non-record dimensions.
 Also see the [`mppnccombine-fast.c`](https://github.com/coecms/mppnccombine-fast) tool developed for the Modular
 Ocean Modelling system.
+
+# Why
+Using this tool won't always result in a speedup. For relatively fast
+scripts, the overhead of creating a bunch of temporary NetCDF
+files beats out the script computation time.
+
+However, this tool is exceedingly useful in two situations:
+
+1. For very slow, laborious scripts, performing the computation in parallel will result in a very obvious speedup.
+2. For enormous files, e.g. file sizes approaching or greater than the RAM on your PC, when your computer may run out of RAM and have to use the hard disk for "virtual" RAM. This gets incredibly slow and will also grind your server to a halt for other processes. With this tool, you can use the `-p` and `-n` flags (see below for details) to serially process the file in **chunks**, eliminating this memory bottleneck.
+<!-- This is great where your computation bottleneck is RAM due to large file sizes. -->
 
 # Installation
 Download this utility with

@@ -3,32 +3,27 @@
 # Function that expands functionality of mppnccombine, to also
 # work for files split along an *unlimited* dimension e.g. 'time'
 ################################################################################
-# Defaults and checks
-silent=false
-if ! which ncks &>/dev/null; then
-  echo "Error: ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
-  exit 1
-fi
 # Parse args
+silent=false
+! which ncks &>/dev/null && raise "ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
+source header.sh
 while [ $# -ne 0 ]; do
   case $1 in
     -s) silent=true ;;
-    -*) echo "Error: Unknown flag ${1}." && exit 1 ;;
+    -*) raise "Unknown flag ${1}." ;;
     *)  [ -z "$filename" ] && filename="$1" || files+=("$1") ;;
   esac
   shift
 done
-[ -z "$files" ] && echo "Error: No input files found." && exit 1
-! [[ "$filename" =~ .nc$ ]] && echo "Error: File $filename does not end in '.nc' extension." && exit 1 # output file
+[ -z "$files" ] && raise "No input files found."
+! [[ "$filename" =~ .nc$ ]] && raise "File $filename does not end in '.nc' extension." # output file
 # Get the concatenation dimension
 for file in "${files[@]}"; do
   iname=$(ncdump -h "${files[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
   if [ -z "$iname" ]; then
-    echo "Error: File $file does not have dimension with domain_decomposition attribute."
-    exit 1
+    raise "File $file does not have dimension with domain_decomposition attribute."
   elif [ -n "$dname" ] && [ "$dname" != "$iname" ]; then
-    echo "Error: File $file has different domain_decomposition dimension, ${iname}, from dimension from previous file, ${dname}."
-    exit 1
+    raise "File $file has different domain_decomposition dimension, ${iname}, from dimension from previous file, ${dname}."
   fi
   dname=$iname
 done
@@ -43,22 +38,16 @@ ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dname &>/dev/null
 # ./mppncdivide -d=time test.nc; rm tmp.nc; time ncrcat -O test.*.nc tmp.nc
 rm "$filename" 2>/dev/null
 if $unlimited; then
-  if ! which ncrcat &>/dev/null; then
-    echo "Error: ncrcat not found, mppnccombine requires the NetCDF Operators (NCO) tools."
-    exit 1
-  fi
+  ! which ncrcat &>/dev/null && \
+    raise "ncrcat not found, mppnccombine requires the NetCDF Operators (NCO) tools."
   ncrcat -O "${files[@]}" "$filename"
-  [ $? -ne 0 ] && echo "Error: ncrcat failed." && exit 1
+  [ $? -ne 0 ] && raise "ncrcat failed."
 # Combine with mppnccombine
 else
-  if ! which ./mppnccombine.x &>/dev/null; then
-    echo "Error: ./mppnccombine.x executable not found. You must compile mppnccombine.c with the make.sh script."
-    exit 1
-  fi
+  ! which ./mppnccombine.x &>/dev/null && \
+    raise "./mppnccombine.x executable not found. You must compile mppnccombine.c with the make.sh script."
   ./mppnccombine.x "$filename" "${files[@]}"
-  [ $? -ne 0 ] && echo "Error: mppnccombine.x failed." && exit 1
+  [ $? -ne 0 ] && raise "mppnccombine.x failed."
 fi
 # Message
-if ! $silent; then
-  echo "$filename"
-fi
+$silent || echo "$filename"

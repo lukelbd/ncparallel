@@ -18,31 +18,22 @@ while [ $# -ne 0 ]; do
     -p=*) pmax=${1#*=} ;;
     -f) fix=true ;; # fix record dimension?
     -s) silent=true ;;
-    -*) echo "Error: Unknown flag ${1}." && exit 1 ;;
-    *)  [ -n "$filename" ] && echo "Error: Got multiple files." && exit 1; filename="$1" ;;
+    -*) raise "Unknown flag ${1}." ;;
+    *)  [ -n "$filename" ] && raise "Got multiple files."; filename="$1" ;;
   esac
   shift
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-! [[ "$filename" =~ .nc$ ]] && echo "Error: File does not end in '.nc' extension." && exit 1
-! which ncks &>/dev/null && echo "Error: ncks not found, ncdivide requires the NetCDF Operators (NCO) tools." && exit 1
+! [[ "$filename" =~ .nc$ ]] && raise "File does not end in '.nc' extension."
+! which ncks &>/dev/null && raise "ncks not found, ncdivide requires the NetCDF Operators (NCO) tools."
 
 # Get dimension size by parsing ncks
 # Could also parse ncdump, but this script requires NCO already so why not
 # See: http://nco.sourceforge.net/nco.html#ncdmnsz
 ndim=$(ncks --trd -m -M "$filename" | grep -E -i ": ${dname}, size =" | cut -f 7 -d ' ' | uniq | xargs)
-if [ -z "$ndim" ]; then
-  echo "Dimension ${dname} not found in filename ${filename}."
-  exit 1
-fi
-if ! [[ $ndim =~ ^[0-9]+$ ]]; then
-  echo "Got invalid size ${ndim} for dimension ${dname}."
-  exit 1
-fi
-if [ $((ndim % nsplit)) -ne 0 ]; then
-  echo "Error: Incompatible dimension size ${ndim} for ${nsplit} splits."
-  exit 1
-fi
+[ -z "$ndim" ] && raise "Dimension ${dname} not found in filename ${filename}."
+! [[ $ndim =~ ^[0-9]+$ ]] && raise "Got invalid size ${ndim} for dimension ${dname}."
+[ $((ndim % nsplit)) -ne 0 ] && raise "Incompatible dimension size ${ndim} for ${nsplit} splits."
 
 # Optionally fix record dimension
 if $fix; then

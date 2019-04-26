@@ -17,17 +17,18 @@ while [ $# -ne 0 ]; do
     -f) flags="-f" ;;
     -k) keep=true ;;
     -s) silent=true ;;
-    -*) echo "Error: Unknown argument ${1}." && exit 1 ;;
+    -*) raise "Unknown argument ${1}." ;;
     *) args+=("$1") ;;
   esac
   shift
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-[ ${#args[@]} -ne 3 ] && echo "Error: Usage is ncparallel 'command' 'input.nc' 'output.nc', where command is any command that accepts an input file and saves data to an output file." && exit 1
+[ ${#args[@]} -ne 3 ] && raise "Usage is ncparallel 'command' 'input.nc' 'output.nc', where command is any command that accepts an input file and saves data to an output file."
 dir=${0%/*}
 cmd="${args[0]}"
 input="${args[1]}"
 output="${args[2]}"
+[ -r "$input" ] || raise "Input file \"$input\" not found."
 
 # Divide into smaller files and collect names in a bash array
 # Format will be input.0000.nc, input.0001.nc, etc.
@@ -35,7 +36,7 @@ output="${args[2]}"
 t=$(date +%s)
 $silent || echo "Dividing file: ${input##*/}"
 inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dname $flags "$input"))
-[ $? -ne 0 ] && echo "Error: ncdivide failed." && exit 1
+[ $? -ne 0 ] && raise "ncdivide failed."
 $silent || echo "Elapsed time: $(($(date +%s) - t))s."
 
 # Generate background processes for each file, for example a python script
@@ -69,8 +70,6 @@ $silent || echo "Elapsed time: $(($(date +%s) - t))s."
 t=$(date +%s)
 $silent || echo "Combining into file: ${output##*/}"
 $dir/nccombine "$output" "${outputs[@]}"
-[ $? -ne 0 ] && echo "Error: nccombine failed." && exit 1
-if ! $keep; then
-  rm "${outputs[@]}" "${inputs[@]}"
-fi
+[ $? -ne 0 ] && raise "nccombine failed."
+! $keep && rm "${outputs[@]}" "${inputs[@]}"
 $silent || echo "Elapsed time: $(($(date +%s) - t))s."
