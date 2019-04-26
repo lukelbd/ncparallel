@@ -9,12 +9,12 @@ Ocean Modelling system.
 # Why
 Using this tool won't always result in a speedup. For relatively fast
 scripts, the overhead of creating a bunch of temporary NetCDF
-files beats out the script computation time.
+files can exceed the original script computation time.
 
 However, this tool is exceedingly useful in two situations:
 
 1. For very slow, laborious scripts, performing the computation in parallel will result in a very obvious speedup.
-2. For enormous files, e.g. file sizes approaching or greater than the RAM on your PC, when your computer may run out of RAM and have to use the hard disk for "virtual" RAM. This gets incredibly slow and will also grind your server to a halt for other processes. With this tool, you can use the `-p` and `-n` flags (see below for details) to serially process the file in **chunks**, eliminating this memory bottleneck.
+2. For enormous files, e.g. file sizes approaching or greater than the available RAM, your computer may run out of memory and have to use the hard disk for "virtual" RAM. This gets incredibly slow and will also grind the computer to a crawl, getting in the way of other processes. With this tool, you can use the `-p` and `-n` flags (see below for details) to serially process the file in **chunks**, eliminating this memory bottleneck.
 <!-- This is great where your computation bottleneck is RAM due to large file sizes. -->
 
 # Installation
@@ -56,5 +56,9 @@ Note that the script must accept an input file and an output file as arguments.
 
 If you do not want parallel processing and instead just want to 
 split up the file into more manageable pieces for your script,
-simply use `-n=1`. This can be very useful for large file sizes!
+simply use `-n=1`.
+As explained above, this is very useful for large file sizes
+and scripts limited by available memory.
+<!-- your file size is such that
+   - the bottleneck in your execution time is due to memory limitations. -->
 
