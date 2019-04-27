@@ -24,27 +24,34 @@ while [ $# -ne 0 ]; do
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
 [ ${#args[@]} -ne 3 ] && raise "Usage is ncparallel 'command' 'input.nc' 'output.nc', where command is any command that accepts an input file and saves data to an output file."
+# Variables
 dir=${0%/*}
 cmd="${args[0]}"
 input="${args[1]}"
 output="${args[2]}"
 [ -r "$input" ] || raise "Input file \"$input\" not found."
+# Time format
+if $silent; then
+  export TIMEFORMAT=$''
+else
+  export TIMEFORMAT=$'real %3lR user %3lU sys %3lS'
+fi
 
 # Divide into smaller files and collect names in a bash array
 # Format will be input.0000.nc, input.0001.nc, etc.
 # TODO: Divide up to n blocks
-t=$(date +%s)
 $silent || echo "Dividing file: ${input##*/}"
+time {
 inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dname $flags "$input"))
 [ $? -ne 0 ] && raise "ncdivide failed."
-$silent || echo "Elapsed time: $(($(date +%s) - t))s."
+}
 
 # Generate background processes for each file, for example a python script
 # that creates a new NetCDF file from some input NetCDF file.
 # WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
 # attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
 i=1
-t=$(date +%s)
+time {
 $silent || echo "Running $cmd"
 $silent || echo "Input files: ${inputs[@]##*/}"
 for ifile in "${inputs[@]}"; do
@@ -61,15 +68,16 @@ for ifile in "${inputs[@]}"; do
     let i+=1
   fi
 done
-pwait ${pids[@]}
 $silent || echo "Output files: ${outputs[@]##*/}"
-$silent || echo "Elapsed time: $(($(date +%s) - t))s."
+}
+pwait ${pids[@]}
 
 # Finally combine, and remove the temporary files
 # generated for parallel processing
-t=$(date +%s)
 $silent || echo "Combining into file: ${output##*/}"
+time {
 $dir/nccombine "$output" "${outputs[@]}"
 [ $? -ne 0 ] && raise "nccombine failed."
+}
 ! $keep && rm "${outputs[@]}" "${inputs[@]}"
-$silent || echo "Elapsed time: $(($(date +%s) - t))s."
+exit 0

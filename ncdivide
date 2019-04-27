@@ -64,5 +64,5 @@ for ni in $(seq 1 $nsplit); do
     let i+=1
   fi
 done
-# Verify and exit
 $silent || echo "${files[@]}"
+exit 0

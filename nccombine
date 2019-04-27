@@ -4,12 +4,10 @@
 # work for files split along an *unlimited* dimension e.g. 'time'
 ################################################################################
 # Parse args
-silent=false
 ! which ncks &>/dev/null && raise "ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
 source header.sh
 while [ $# -ne 0 ]; do
   case $1 in
-    -s) silent=true ;;
     -*) raise "Unknown flag ${1}." ;;
     *)  [ -z "$filename" ] && filename="$1" || files+=("$1") ;;
   esac
@@ -21,7 +19,7 @@ done
 for file in "${files[@]}"; do
   iname=$(ncdump -h "${files[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
   if [ -z "$iname" ]; then
-    raise "File $file does not have dimension with domain_decomposition attribute."
+    raise "File $file does not have dimension with domain_decomposition attribute. Perhaps your script deleted it!"
   elif [ -n "$dname" ] && [ "$dname" != "$iname" ]; then
     raise "File $file has different domain_decomposition dimension, ${iname}, from dimension from previous file, ${dname}."
   fi
@@ -49,5 +47,4 @@ else
   ./mppnccombine.x "$filename" "${files[@]}"
   [ $? -ne 0 ] && raise "mppnccombine.x failed."
 fi
-# Message
-$silent || echo "$filename"
+exit 0
