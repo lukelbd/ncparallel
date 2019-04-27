@@ -10,7 +10,8 @@ fix=false
 dname=lat # can also split along time dimension?
 nsplit=8
 silent=false
-source header.sh
+dir=${0%/*}
+source $dir/header.sh
 while [ $# -ne 0 ]; do
   case $1 in
     -d=*) dname=${1#*=} ;;
@@ -44,21 +45,25 @@ fi
 # Split up the file, making sure to add attributes to that mppnccombine
 # can combine it again.
 # WARNING: The attributes must be long type, not short
+# NOTE: We employ various flags to optimize performance; use hdr_pad so the
+# ncatted do not cause re-reading entire file due to having to shift
+# contents down, no_tmp_fl to prevent extra writing, and bfr_sz which mysteriously
+# improves performance by quite a lot. Current config seems to be the best we can do.
 i=1
 for ni in $(seq 1 $nsplit); do
   file="${filename%.nc}.$(printf "%04d" $((ni-1))).nc"
   d1=$(((ni - 1)*ndim/nsplit)) # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
   d2=$((ni*ndim/nsplit - 1)) # e.g. nsplit=10, ndim=200, goes 19, 39, 59
-  { # store attribute as type *short*, i.e. int32
-  # ncks -4 -O -h --no-abc --fix_rec_dmn 'time' --mk_rec_dmn $dname -d $dname,$d1,$d2 "$filename" "$file"
-  ncks -O -h --no-abc $flag -d $dname,$d1,$d2 "$filename" "$file"
-  ncatted -O -h -a domain_decomposition,$dname,o,l,"1,$ndim,$((d1+1)),$((d2+1))" "$file"
+  {
+  # ncks -O -h --no_tmp_fl --hdr_pad 1000 --no-abc $flag -d $dname,$d1,$d2 "$filename" "$file"
+  ncks -O -h --bfr_sz 8000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag -d $dname,$d1,$d2 "$filename" "$file"
   ncatted -O -h -a NumFilesInSet,global,o,l,"$nsplit" "$file"
+  ncatted -O -h -a domain_decomposition,$dname,o,l,"1,$ndim,$((d1+1)),$((d2+1))" "$file"
   } &
   pids+=($!)
   files+=("$file")
   if [ $i -eq $pmax ]; then
-    i=1; pwait ${pids[@]}
+    i=1; pwait "ncks" ${pids[@]}
     unset pids
   else
     let i+=1

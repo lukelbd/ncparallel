@@ -33,8 +33,10 @@ with nc4.Dataset(filename, 'r') as f:
     lat_att = get_dict(lat_var)
 
 # Next perform calculations
-emf = ((u - u.mean(axis=-1, keepdims=True)) * (v - v.mean(axis=-1, keepdims=True))).mean(axis=-1)
-ehf = ((t - t.mean(axis=-1, keepdims=True)) * (v - v.mean(axis=-1, keepdims=True))).mean(axis=-1)
+# NOTE: Artifically increase complexity of computations
+for i in range(4):
+    emf = ((u - u.mean(axis=-1, keepdims=True)) * (v - v.mean(axis=-1, keepdims=True))).mean(axis=-1)
+    ehf = ((t - t.mean(axis=-1, keepdims=True)) * (v - v.mean(axis=-1, keepdims=True))).mean(axis=-1)
 
 # Save file
 if os.path.exists(outname):

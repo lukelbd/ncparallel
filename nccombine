@@ -5,7 +5,8 @@
 ################################################################################
 # Parse args
 ! which ncks &>/dev/null && raise "ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
-source header.sh
+dir=${0%/*}
+source $dir/header.sh
 while [ $# -ne 0 ]; do
   case $1 in
     -*) raise "Unknown flag ${1}." ;;
@@ -38,7 +39,7 @@ rm "$filename" 2>/dev/null
 if $unlimited; then
   ! which ncrcat &>/dev/null && \
     raise "ncrcat not found, mppnccombine requires the NetCDF Operators (NCO) tools."
-  ncrcat -O "${files[@]}" "$filename"
+  ncrcat -O -h "${files[@]}" "$filename"
   [ $? -ne 0 ] && raise "ncrcat failed."
 # Combine with mppnccombine
 else

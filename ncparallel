@@ -8,7 +8,8 @@ keep=false
 dname=lat # can also split along time dimension?
 nsplit=8
 silent=false
-source header.sh
+dir=${0%/*}
+source $dir/header.sh
 while [ $# -ne 0 ]; do
   case "$1" in
     -n=*) nsplit="${1#*=}" ;;
@@ -62,7 +63,7 @@ for ifile in "${inputs[@]}"; do
   outputs+=("$ofile") # store output files in a bash array
   pids+=($!) # store process IDs in another bash array
   if [ $i -eq $pmax ]; then
-    i=1; pwait ${pids[@]}
+    i=1; pwait "$cmd" ${pids[@]}
     unset pids
   else
     let i+=1
@@ -70,7 +71,7 @@ for ifile in "${inputs[@]}"; do
 done
 $silent || echo "Output files: ${outputs[@]##*/}"
 }
-pwait ${pids[@]}
+pwait "$cmd" ${pids[@]}
 
 # Finally combine, and remove the temporary files
 # generated for parallel processing
