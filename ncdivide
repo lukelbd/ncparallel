@@ -56,7 +56,7 @@ for ni in $(seq 1 $nsplit); do
   d2=$((ni*ndim/nsplit - 1)) # e.g. nsplit=10, ndim=200, goes 19, 39, 59
   {
   # ncks -O -h --no_tmp_fl --hdr_pad 1000 --no-abc $flag -d $dname,$d1,$d2 "$filename" "$file"
-  ncks -O -h --bfr_sz 8000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag -d $dname,$d1,$d2 "$filename" "$file"
+  ncks -O -h -D 3 --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag -d $dname,$d1,$d2 "$filename" "$file" >&2
   ncatted -O -h -a NumFilesInSet,global,o,l,"$nsplit" "$file"
   ncatted -O -h -a domain_decomposition,$dname,o,l,"1,$ndim,$((d1+1)),$((d2+1))" "$file"
   } &
