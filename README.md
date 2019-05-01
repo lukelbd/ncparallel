@@ -14,7 +14,7 @@ files can exceed the original script computation time.
 However, this tool is exceedingly useful in two situations:
 
 1. For very slow, laborious scripts, performing the computation in parallel will result in a very obvious speedup.
-2. For enormous files, e.g. file sizes approaching or greater than the available RAM, your computer may run out of memory and have to use the hard disk for "virtual" RAM. This gets incredibly slow and will also grind the computer to a crawl, getting in the way of other processes. With this tool, you can use the `-p` and `-n` flags (see below for details) to serially process the file in **chunks**, eliminating this memory bottleneck.
+2. For enormous files, e.g. file sizes approaching or greater than the available RAM, your computer may run out of memory and have to use the hard disk for "virtual" RAM. This gets incredibly slow and will also grind the computer to a crawl, getting in the way of other processes. With this tool, you can use the `-p` and `-n` flags (see below for details) to serially process the file in chunks, eliminating this memory bottleneck.
 <!-- This is great where your computation bottleneck is RAM due to large file sizes. -->
 
 # Installation
