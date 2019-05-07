@@ -82,19 +82,22 @@ time {
 $silent || echo "Running $cmd"
 $silent || echo "Input files: ${inputs[@]##*/}"
 for ifile in "${inputs[@]}"; do
+  # Output name
   prefix="${output%.nc}" # just trim the extension
   suffix="${ifile:${#ifile}-7}" # 0000.nc, 0001.nc, etc.
   ofile="${prefix}.${suffix}"
+  # Run command
   $cmd "$ifile" "$ofile" &>/dev/null & # trailing ampersand sends process to background
-  outputs+=("$ofile") # store output files in a bash array
   pids+=($!) # store process IDs in another bash array
+  outputs+=("$ofile") # store output files in a bash array
   if [ $i -eq $pmax ]; then
-    i=1; pwait "$cmd" ${pids[@]}
+    i=1; pwait "$cmd" "${pids[@]}"
     unset pids
   else
     let i+=1
   fi
 done
+pwait "$cmd" "${pids[@]}"
 $silent || echo "Output files: ${outputs[@]##*/}"
 }
 pwait "$cmd" ${pids[@]}
