@@ -67,11 +67,11 @@ for ni in $(seq 1 $nsplit); do
   pids+=($!)
   files+=("$file")
   if [ $i -eq $pmax ]; then
-    i=1; pwait ${pids[@]}
+    i=1; pwait 'ncks' "${pids[@]}"
     unset pids
   else
     let i+=1
   fi
 done
-# Verify and exit
+pwait 'ncks' "${pids[@]}"
 $silent || echo "${files[@]}"
