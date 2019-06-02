@@ -10,7 +10,8 @@ fix=false
 dname=lat # can also split along time dimension?
 nsplit=8
 silent=false
-source header.sh
+dir=${0%/*}
+source $dir/header.sh
 while [ $# -ne 0 ]; do
   case $1 in
     -d=*) dname=${1#*=} ;;
@@ -18,31 +19,22 @@ while [ $# -ne 0 ]; do
     -p=*) pmax=${1#*=} ;;
     -f) fix=true ;; # fix record dimension?
     -s) silent=true ;;
-    -*) echo "Error: Unknown flag ${1}." && exit 1 ;;
-    *)  [ -n "$filename" ] && echo "Error: Got multiple files." && exit 1; filename="$1" ;;
+    -*) raise "Unknown flag ${1}." ;;
+    *)  [ -n "$filename" ] && raise "Got multiple files."; filename="$1" ;;
   esac
   shift
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-! [[ "$filename" =~ .nc$ ]] && echo "Error: File does not end in '.nc' extension." && exit 1
-! which ncks &>/dev/null && echo "Error: ncks not found, ncdivide requires the NetCDF Operators (NCO) tools." && exit 1
+! [[ "$filename" =~ .nc$ ]] && raise "File does not end in '.nc' extension."
+! which ncks &>/dev/null && raise "ncks not found, ncdivide requires the NetCDF Operators (NCO) tools."
 
 # Get dimension size by parsing ncks
 # Could also parse ncdump, but this script requires NCO already so why not
 # See: http://nco.sourceforge.net/nco.html#ncdmnsz
 ndim=$(ncks --trd -m -M "$filename" | grep -E -i ": ${dname}, size =" | cut -f 7 -d ' ' | uniq | xargs)
-if [ -z "$ndim" ]; then
-  echo "Dimension ${dname} not found in filename ${filename}."
-  exit 1
-fi
-if ! [[ $ndim =~ ^[0-9]+$ ]]; then
-  echo "Got invalid size ${ndim} for dimension ${dname}."
-  exit 1
-fi
-if [ $((ndim % nsplit)) -ne 0 ]; then
-  echo "Error: Incompatible dimension size ${ndim} for ${nsplit} splits."
-  exit 1
-fi
+[ -z "$ndim" ] && raise "Dimension ${dname} not found in filename ${filename}."
+! [[ $ndim =~ ^[0-9]+$ ]] && raise "Got invalid size ${ndim} for dimension ${dname}."
+[ $((ndim % nsplit)) -ne 0 ] && raise "Incompatible dimension size ${ndim} for ${nsplit} splits."
 
 # Optionally fix record dimension
 if $fix; then
@@ -53,16 +45,20 @@ fi
 # Split up the file, making sure to add attributes to that mppnccombine
 # can combine it again.
 # WARNING: The attributes must be long type, not short
+# NOTE: We employ various flags to optimize performance; use hdr_pad so the
+# ncatted do not cause re-reading entire file due to having to shift
+# contents down, no_tmp_fl to prevent extra writing, and bfr_sz which mysteriously
+# improves performance by quite a lot. Current config seems to be the best we can do.
 i=1
 for ni in $(seq 1 $nsplit); do
   file="${filename%.nc}.$(printf "%04d" $((ni-1))).nc"
   d1=$(((ni - 1)*ndim/nsplit)) # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
   d2=$((ni*ndim/nsplit - 1)) # e.g. nsplit=10, ndim=200, goes 19, 39, 59
-  { # store attribute as type *short*, i.e. int32
-  # ncks -4 -O -h --no-abc --fix_rec_dmn 'time' --mk_rec_dmn $dname -d $dname,$d1,$d2 "$filename" "$file"
-  ncks -O -h --no-abc $flag -d $dname,$d1,$d2 "$filename" "$file"
-  ncatted -O -h -a domain_decomposition,$dname,o,l,"1,$ndim,$((d1+1)),$((d2+1))" "$file"
+  {
+  # ncks -O -h --no_tmp_fl --hdr_pad 1000 --no-abc $flag -d $dname,$d1,$d2 "$filename" "$file"
+  ncks -O -h -D 3 --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag -d $dname,$d1,$d2 "$filename" "$file" >&2
   ncatted -O -h -a NumFilesInSet,global,o,l,"$nsplit" "$file"
+  ncatted -O -h -a domain_decomposition,$dname,o,l,"1,$ndim,$((d1+1)),$((d2+1))" "$file"
   } &
   pids+=($!)
   files+=("$file")
@@ -75,3 +71,4 @@ for ni in $(seq 1 $nsplit); do
 done
 pwait 'ncks' "${pids[@]}"
 $silent || echo "${files[@]}"
+exit 0
