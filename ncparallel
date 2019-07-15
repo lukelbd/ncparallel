@@ -22,6 +22,7 @@ Optional arguments
   -f   If passed and dimension is a 'record' (i.e. unlimited) dimension, it is changed to fixed length.
   -s   If passed, silent mode is enabled.
   -k   If passed, temporary files are not deleted.
+  -r   If passed, order of INPUT and OUTPUT is reversed.
   -d=* The dimension name along which we split the file. Defaults to 'lat'.
   -n=* The number of file pieces to generate. Defaults to '8'.
   -p=* The maximum number of parallel processes. This defaults to the -n
@@ -30,6 +31,7 @@ Optional arguments
 # Get arguments
 # TODO: Support for nsplit=1, just run the command!
 keep=false
+reverse=false
 dname=lat # can also split along time dimension?
 nsplit=8
 silent=false
@@ -44,6 +46,7 @@ while [ $# -ne 0 ]; do
     -f) flags="-f" ;;
     -k) keep=true ;;
     -s) silent=true ;;
+    -r) reverse=true ;;
     -*) raise "Unknown argument ${1}." ;;
     *) args+=("$1") ;;
   esac
@@ -54,8 +57,13 @@ done
 # Variables
 dir=${0%/*}
 cmd="${args[0]}"
-input="${args[1]}"
-output="${args[2]}"
+if $reverse; then
+  input="${args[2]}"
+  output="${args[1]}"
+else
+  input="${args[1]}"
+  output="${args[2]}"
+fi
 [ -r "$input" ] || raise "Input file \"$input\" not found."
 # Time format
 if $silent; then
@@ -87,7 +95,11 @@ for ifile in "${inputs[@]}"; do
   suffix="${ifile:${#ifile}-7}" # 0000.nc, 0001.nc, etc.
   ofile="${prefix}.${suffix}"
   # Run command
-  $cmd "$ifile" "$ofile" &>/dev/null & # trailing ampersand sends process to background
+  if $reverse; then
+    $cmd "$ofile" "$ifile" &>/dev/null & # trailing ampersand sends process to background
+  else
+    $cmd "$ifile" "$ofile" &>/dev/null & # trailing ampersand sends process to background
+  fi
   pids+=($!) # store process IDs in another bash array
   outputs+=("$ofile") # store output files in a bash array
   if [ $i -eq $pmax ]; then
