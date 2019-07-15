@@ -1,9 +1,34 @@
 #!/usr/bin/env bash
-################################################################################
 # The driver script
-# Usage: ./ncparallel 'command' input output
-################################################################################
+usage="ncparallel [OPTIONS...] [-d=DIMNAME] [-p=NP] [-n=NF] COMMAND INPUT OUTPUT"
+doc="This script splits up an input NetCDF file into chunks, runs a script
+on some or all of those chunks in parallel, and merges the results into
+an output NetCDF file.
+
+Usage
+
+  $usage
+
+Positional arguments
+
+  COMMAND  A command-line command, e.g. './myscript.sh' or a quoted
+           string like 'python file.py'.
+  INPUT    The input NetCDF file name.
+  OUTPUT   The final output NetCDF file name.
+
+Optional arguments
+
+  -h   Print this message.
+  -f   If passed and dimension is a 'record' (i.e. unlimited) dimension, it is changed to fixed length.
+  -s   If passed, silent mode is enabled.
+  -k   If passed, temporary files are not deleted.
+  -d=* The dimension name along which we split the file. Defaults to 'lat'.
+  -n=* The number of file pieces to generate. Defaults to '8'.
+  -p=* The maximum number of parallel processes. This defaults to the -n
+       argument but can also be smaller.
+"
 # Get arguments
+# TODO: Support for nsplit=1, just run the command!
 keep=false
 dname=lat # can also split along time dimension?
 nsplit=8
@@ -12,6 +37,7 @@ dir=${0%/*}
 source $dir/header.sh
 while [ $# -ne 0 ]; do
   case "$1" in
+    -h) echo "$doc" >&2 && exit 0 ;;
     -n=*) nsplit="${1#*=}" ;;
     -d=*) dname="${1#*=}" ;;
     -p=*) pmax="${1#*=}" ;;
@@ -24,7 +50,7 @@ while [ $# -ne 0 ]; do
   shift
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-[ ${#args[@]} -ne 3 ] && raise "Usage is ncparallel 'command' 'input.nc' 'output.nc', where command is any command that accepts an input file and saves data to an output file."
+[ ${#args[@]} -ne 3 ] && raise "Incorrect usage."
 # Variables
 dir=${0%/*}
 cmd="${args[0]}"

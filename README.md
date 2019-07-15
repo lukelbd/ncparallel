@@ -36,9 +36,9 @@ ncparallel -d=lat -p=8 -n=32 script input.nc output.nc
 ```
 Flags are as follows:
 
-* `-d=<>`: The dimension name along which we split the file.
-* `-n=<>`: The number of file pieces to generate.
-* `-p=<>`: The maximum number of parallel processes. This defaults to the `-n` argument but can also be smaller.
+* `-d=<>`: The dimension name along which we split the file. Defaults to `lat`.
+* `-n=<>`: The number of file pieces to generate. Defaults to `8`.
+* `-p=<>`: The maximum number of parallel processes. Defaults to the `-n` argument but can also be smaller.
 * `-f`: If passed and dimension is a "record" (i.e. unlimited) dimension, it is changed to fixed length.
 * `-s`: If passed, silent mode is enabled.
 * `-k`: If passed, temporary files are not deleted.

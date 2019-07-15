@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 ################################################################################
-# Magic function that mimics behavior of mppnccombine by separating
-# files into chunks of latitudes with ncks hyerslabbing. Adds back
-# attributes so that mppnccombine can combine them. Will also slice the
-# file as parallel background processes.
+# Separating files into chunks along arbitrary dimension using ncks
+# hyerslabbing. Adds back attributes so that mppnccombine can combine them.
+# Slices the file using parallel background processes.
 ################################################################################
 # Get arguments
 fix=false
@@ -45,7 +44,7 @@ fi
 # Split up the file, making sure to add attributes to that mppnccombine
 # can combine it again.
 # WARNING: The attributes must be long type, not short
-# NOTE: We employ various flags to optimize performance; use hdr_pad so the
+# WARNING: We employ various flags to optimize performance; use hdr_pad so the
 # ncatted do not cause re-reading entire file due to having to shift
 # contents down, no_tmp_fl to prevent extra writing, and bfr_sz which mysteriously
 # improves performance by quite a lot. Current config seems to be the best we can do.
@@ -55,7 +54,6 @@ for ni in $(seq 1 $nsplit); do
   d1=$(((ni - 1)*ndim/nsplit)) # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
   d2=$((ni*ndim/nsplit - 1)) # e.g. nsplit=10, ndim=200, goes 19, 39, 59
   {
-  # ncks -O -h --no_tmp_fl --hdr_pad 1000 --no-abc $flag -d $dname,$d1,$d2 "$filename" "$file"
   ncks -O -h -D 3 --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag -d $dname,$d1,$d2 "$filename" "$file" >&2
   ncatted -O -h -a NumFilesInSet,global,o,l,"$nsplit" "$file"
   ncatted -O -h -a domain_decomposition,$dname,o,l,"1,$ndim,$((d1+1)),$((d2+1))" "$file"
