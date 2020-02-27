@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-################################################################################
-# Function that expands functionality of mppnccombine, to also
-# work for files split along an *unlimited* dimension e.g. 'time'
-################################################################################
+usage="nccombine OUTFILE FILE1 [FILE2 FILE3...]"
+doc="This script merges a NetCDF file along an arbitrary dimension using
+'mppnccombine', or along the time or record dimension using 'ncrcat'.
+
+Usage
+
+  $usage
+"
 # Parse args
 ! which ncks &>/dev/null && raise "ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
 dir=${0%/*}

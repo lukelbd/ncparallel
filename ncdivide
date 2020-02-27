@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
-################################################################################
-# Separating files into chunks along arbitrary dimension using ncks
-# hyerslabbing. Adds back attributes so that mppnccombine can combine them.
-# Slices the file using parallel background processes.
-################################################################################
+usage="ncdivide [-fsh] [-d=DIMNAME] [-p=NP] [-n=NF] INPUT"
+doc="This script divides a NetCDF file along an arbitrary dimension using
+parallelized 'ncks' hyperslab selection.
+
+Usage
+
+  $usage
+
+Optional arguments
+
+  -h   Print this message.
+  -f   If passed and dimension is a 'record' dimension, it is changed to fixed length.
+  -s   If passed, silent mode is enabled.
+  -d=* The dimension name along which we split the file. Defaults to 'lat'.
+  -n=* The number of file pieces to generate. Defaults to '8'.
+  -p=* The maximum number of parallel processes. This defaults to the -n
+       argument but can also be smaller.
+"
 # Get arguments
 fix=false
 dname=lat # can also split along time dimension?
@@ -13,6 +26,7 @@ dir=${0%/*}
 source $dir/header.sh
 while [ $# -ne 0 ]; do
   case $1 in
+    -h) echo "$doc" >&2 && exit 0 ;;
     -d=*) dname=${1#*=} ;;
     -n=*) nsplit=${1#*=} ;;
     -p=*) pmax=${1#*=} ;;
