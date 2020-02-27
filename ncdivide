@@ -23,6 +23,7 @@ dname=lat # can also split along time dimension?
 nsplit=8
 silent=false
 dir=${0%/*}
+# debug='-D 2'
 source $dir/header.sh
 while [ $# -ne 0 ]; do
   case $1 in
@@ -38,16 +39,17 @@ while [ $# -ne 0 ]; do
   shift
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-! [[ "$filename" =~ .nc$ ]] && raise "File does not end in '.nc' extension."
-! which ncks &>/dev/null && raise "ncks not found, ncdivide requires the NetCDF Operators (NCO) tools."
+[ -n "$filename" ] || raise "Must pass input filename."
+[[ "$filename" =~ .nc$ ]] || raise "File does not end in '.nc' extension."
+which ncks &>/dev/null || raise "ncks not found, ncdivide requires the NetCDF Operators (NCO) tools."
 
 # Get dimension size by parsing ncks
 # Could also parse ncdump, but this script requires NCO already so why not
 # See: http://nco.sourceforge.net/nco.html#ncdmnsz
 ndim=$(ncks --trd -m -M "$filename" | grep -E -i ": ${dname}, size =" | cut -f 7 -d ' ' | uniq | xargs)
-[ -z "$ndim" ] && raise "Dimension ${dname} not found in filename ${filename}."
-! [[ $ndim =~ ^[0-9]+$ ]] && raise "Got invalid size ${ndim} for dimension ${dname}."
-[ $((ndim % nsplit)) -ne 0 ] && raise "Incompatible dimension size ${ndim} for ${nsplit} splits."
+[ -n "$ndim" ] || raise "Dimension ${dname} not found in filename ${filename}."
+[[ $ndim =~ ^[0-9]+$ ]] || raise "Got invalid size ${ndim} for dimension ${dname}."
+[ $((ndim % nsplit)) -eq 0 ] || raise "Incompatible dimension size ${ndim} for ${nsplit} splits."
 
 # Optionally fix record dimension
 if $fix; then
@@ -68,7 +70,7 @@ for ni in $(seq 1 $nsplit); do
   d1=$(((ni - 1)*ndim/nsplit)) # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
   d2=$((ni*ndim/nsplit - 1)) # e.g. nsplit=10, ndim=200, goes 19, 39, 59
   {
-  ncks -O -h -D 3 --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag -d $dname,$d1,$d2 "$filename" "$file" >&2
+  ncks -O -h $debug --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag -d $dname,$d1,$d2 "$filename" "$file" >&2
   ncatted -O -h -a NumFilesInSet,global,o,l,"$nsplit" "$file"
   ncatted -O -h -a domain_decomposition,$dname,o,l,"1,$ndim,$((d1+1)),$((d2+1))" "$file"
   } &

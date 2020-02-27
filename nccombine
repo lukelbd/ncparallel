@@ -8,18 +8,19 @@ Usage
   $usage
 "
 # Parse args
-! which ncks &>/dev/null && raise "ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
+which ncks &>/dev/null || raise "ncks not found. mppncdivide requires the NetCDF Operators (NCO) tools."
 dir=${0%/*}
 source $dir/header.sh
 while [ $# -ne 0 ]; do
   case $1 in
+    -h) echo "$doc" >&2 && exit 0 ;;
     -*) raise "Unknown flag ${1}." ;;
     *)  [ -z "$filename" ] && filename="$1" || files+=("$1") ;;
   esac
   shift
 done
-[ -z "$files" ] && raise "No input files found."
-! [[ "$filename" =~ .nc$ ]] && raise "File $filename does not end in '.nc' extension." # output file
+[ -n "$files" ] || raise "No input files found."
+[[ "$filename" =~ .nc$ ]] || raise "File $filename does not end in '.nc' extension." # output file
 # Get the concatenation dimension
 for file in "${files[@]}"; do
   iname=$(ncdump -h "${files[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
