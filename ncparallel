@@ -53,7 +53,8 @@ while [ $# -ne 0 ]; do
   shift
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-[ ${#args[@]} -ne 3 ] && raise "Incorrect usage."
+[ ${#args[@]} -ne 3 ] && raise "Requires exactly 3 positional arguments."
+
 # Variables
 dir=${0%/*}
 cmd="${args[0]}"
@@ -65,6 +66,7 @@ else
   output="${args[2]}"
 fi
 [ -r "$input" ] || raise "Input file \"$input\" not found."
+
 # Time format
 if $silent; then
   export TIMEFORMAT=$''
@@ -77,8 +79,8 @@ fi
 # TODO: Divide up to n blocks
 $silent || echo "Dividing file: ${input##*/}"
 time {
-inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dname $flags "$input"))
-[ $? -ne 0 ] && raise "ncdivide failed."
+  inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dname $flags "$input")) \
+    || raise "ncdivide failed."
 }
 
 # Generate background processes for each file, for example a python script
@@ -87,39 +89,39 @@ inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dname $flags "$input"))
 # attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
 i=1
 time {
-$silent || echo "Running $cmd"
-$silent || echo "Input files: ${inputs[@]##*/}"
-for ifile in "${inputs[@]}"; do
-  # Output name
-  prefix="${output%.nc}" # just trim the extension
-  suffix="${ifile:${#ifile}-7}" # 0000.nc, 0001.nc, etc.
-  ofile="${prefix}.${suffix}"
-  # Run command
-  if $reverse; then
-    $cmd "$ofile" "$ifile" &>/dev/null & # trailing ampersand sends process to background
-  else
-    $cmd "$ifile" "$ofile" &>/dev/null & # trailing ampersand sends process to background
-  fi
-  pids+=($!) # store process IDs in another bash array
-  outputs+=("$ofile") # store output files in a bash array
-  if [ $i -eq $pmax ]; then
-    i=1; pwait "$cmd" "${pids[@]}"
-    unset pids
-  else
-    let i+=1
-  fi
-done
-pwait "$cmd" "${pids[@]}"
-$silent || echo "Output files: ${outputs[@]##*/}"
+  $silent || echo "Running $cmd"
+  $silent || echo "Input files: ${inputs[*]##*/}"
+  for ifile in "${inputs[@]}"; do
+    # Output name
+    prefix="${output%.nc}" # just trim the extension
+    suffix="${ifile:${#ifile}-7}" # 0000.nc, 0001.nc, etc.
+    ofile="${prefix}.${suffix}"
+    # Run command
+    if $reverse; then
+      $cmd "$ofile" "$ifile" &>/dev/null & # trailing ampersand sends process to background
+    else
+      $cmd "$ifile" "$ofile" &>/dev/null & # trailing ampersand sends process to background
+    fi
+    pids+=($!) # store process IDs in another bash array
+    outputs+=("$ofile") # store output files in a bash array
+    if [ $i -eq $pmax ]; then
+      i=1; pwait "$cmd" "${pids[@]}"
+      unset pids
+    else
+      i=$((i + 1))
+    fi
+  done
+  pwait "$cmd" "${pids[@]}"
+  $silent || echo "Output files: ${outputs[*]##*/}"
 }
-pwait "$cmd" ${pids[@]}
+pwait "$cmd" "${pids[@]}"
 
 # Finally combine, and remove the temporary files
 # generated for parallel processing
 $silent || echo "Combining into file: ${output##*/}"
 time {
-$dir/nccombine "$output" "${outputs[@]}"
-[ $? -ne 0 ] && raise "nccombine failed."
+  $dir/nccombine "$output" "${outputs[@]}" \
+    || raise "nccombine failed."
 }
 ! $keep && rm "${outputs[@]}" "${inputs[@]}"
 exit 0
