@@ -44,14 +44,14 @@ Flags are as follows:
 * `-k`: If passed, temporary files are not deleted.
 
 The first positional argument is the script or command written as you would type it into the command line -- for example, `script.sh`, `'python myscript.py'`, or `'ncap2 -s "math-goes-here"'` (note that the command must be surrounded by quotation marks if it consists of more than one word).
-The command must accept two positional arguments: An input file name, and an output file name.
 The second and third arguments are the input and output file names.
+<!-- The command must accept two positional arguments: An input file name, and an output file name. -->
 
 For an input file named `input.nc` and output file named `output.nc`, parallel processing is achieved as follows:
 
 1. The input file `input.nc` is split up along some dimension into pieces, in this case named `input.0000.nc`, `input.0001.nc`, etc.
 2. The input command is called on the file pieces serially or in parallel (depending on the `-p` flag), in this case with  `command input.0000.nc output.0000.nc`, `command input.0001.nc output.0001.nc`, etc.
-3. The resulting output files `output.0000.nc`, `output.0001.nc`, etc. are combined along the same dimension into the requested output file name, in this case `output.nc`.
+3. The resulting output files are combined along the same dimension into the requested output file name, in this case `output.nc`.
 
 If you do not want parallel processing and instead just want to 
 split up the file into more manageable pieces for your script,
