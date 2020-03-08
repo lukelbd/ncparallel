@@ -32,27 +32,26 @@ does not exist, you can create it, and its contents should be run every time you
 # Usage
 Example usage is as follows:
 ```bash
-ncparallel -d=lat -p=8 -n=32 script input.nc output.nc
+ncparallel -d=lat -p=8 -n=32 command input.nc output.nc
 ```
 Flags are as follows:
 
-* `-d=<>`: The dimension name along which we split the file. Defaults to `lat`.
-* `-n=<>`: The number of file pieces to generate. Defaults to `8`.
-* `-p=<>`: The maximum number of parallel processes. Defaults to the `-n` argument but can also be smaller.
+* `-d=NAME`: The dimension name along which we split the file. Defaults to `lat`.
+* `-n=NUM`: The number of file pieces to generate. Defaults to `8`.
+* `-p=NUM`: The maximum number of parallel processes. Defaults to the `-n` argument but can also be smaller.
 * `-f`: If passed and dimension is a "record" (i.e. unlimited) dimension, it is changed to fixed length.
 * `-s`: If passed, silent mode is enabled.
 * `-k`: If passed, temporary files are not deleted.
 
-The first positional argument is the script or command written as you would type it into the command line
-(for example, `'python myscript.py'` or `'ncap2 -s "math-goes-here"'`; note the quotation marks),
-the second argument is the input file, and the
-third argument is the output file.
+The first positional argument is the script or command written as you would type it into the command line -- for example, `script.sh`, `'python myscript.py'`, or `'ncap2 -s "math-goes-here"'` (note that the command must be surrounded by quotation marks if it consists of more than one word).
+The command must accept two positional arguments: An input file name, and an output file name.
+The second and third arguments are the input and output file names.
 
-Parallel processing is achieved by splitting
-the input file along some dimension into pieces named (in this case) `input.0000.nc`, `input.0001.nc`, etc.,
-calling the input script with (in this case) `script input.0000.nc output.0000.nc`
-for each piece, then combining the resulting `output.0000.nc`, `output.0001.nc`, etc. files and deleting the remnants.
-Note that the script must accept an input file and an output file as arguments.
+For an input file named `input.nc` and output file named `output.nc`, parallel processing is achieved as follows:
+
+1. The input file `input.nc` is split up along some dimension into pieces, in this case named `input.0000.nc`, `input.0001.nc`, etc.
+2. The input command is called on the file pieces serially or in parallel (depending on the `-p` flag), in this case with  `command input.0000.nc output.0000.nc`, `command input.0001.nc output.0001.nc`, etc.
+3. The resulting output files `output.0000.nc`, `output.0001.nc`, etc. are combined along the same dimension into the requested output file name, in this case `output.nc`.
 
 If you do not want parallel processing and instead just want to 
 split up the file into more manageable pieces for your script,
