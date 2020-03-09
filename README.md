@@ -1,10 +1,10 @@
 # What
 This repository introduces the shell script `ncparallel` for
-running an arbitrary script on a NetCDF file **in parallel** by
-dividing and combining the NetCDF file along an **arbitrary dimension**.
-This project uses the highly underrated GFDL Flexible Modelling System `mppnccombine.c` tool for combining datasets along non-record dimensions.
-Also see the [`mppnccombine-fast.c`](https://github.com/coecms/mppnccombine-fast) tool developed for the Modular
-Ocean Modelling system.
+running an arbitrary script on a NetCDF file in parallel by
+dividing and combining the NetCDF file along an arbitrary dimension.
+We use the GFDL Flexible Modelling System `mppnccombine.c` tool for combining datasets along non-record dimensions
+(also see the [`mppnccombine-fast.c`](https://github.com/coecms/mppnccombine-fast)
+tool developed for the Modular Ocean Modelling system).
 
 # Why
 Using this tool won't always result in a speedup. For relatively fast
