@@ -19,23 +19,23 @@ while [ $# -ne 0 ]; do
   esac
   shift
 done
-[ -n "$files" ] || raise "No input files found."
+[ ${#files[@]} -eq 0 ] && raise "No input files found."
 [[ "$filename" =~ .nc$ ]] || raise "File $filename does not end in '.nc' extension." # output file
 
-# Get the concatenation dimension
+# Get the concatenation dimension by inspecting attributes
 for file in "${files[@]}"; do
   iname=$(ncdump -h "${files[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
   if [ -z "$iname" ]; then
     raise "File $file does not have dimension with domain_decomposition attribute. Perhaps your script deleted it!"
-  elif [ -n "$dname" ] && [ "$dname" != "$iname" ]; then
-    raise "File $file has different domain_decomposition dimension, ${iname}, from dimension from previous file, ${dname}."
+  elif [ -n "$dimname" ] && [ "$dimname" != "$iname" ]; then
+    raise "File $file has different domain_decomposition dimension, ${iname}, from dimension from previous file, ${dimname}."
   fi
-  dname=$iname
+  dimname=$iname
 done
 
 # Test whether concatenation dimension is unlimited
-ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dname &>/dev/null
-[ $? -eq 0 ] && unlimited=true || unlimited=false
+ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
+  && unlimited=true || unlimited=false
 
 # Combine files in one of two ways
 # Found out that mppnccombine is *slower* than ncrcat! So if possible, always
@@ -44,15 +44,15 @@ ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dname &>/dev/null
 # ./mppncdivide -d=time test.nc; rm tmp.nc; time ncrcat -O test.*.nc tmp.nc
 rm "$filename" 2>/dev/null
 if $unlimited; then
-  ! which ncrcat &>/dev/null && \
-    raise "ncrcat not found, mppnccombine requires the NetCDF Operators (NCO) tools."
-  ncrcat -O -h "${files[@]}" "$filename"
-  [ $? -ne 0 ] && raise "ncrcat failed."
+  which ncrcat &>/dev/null \
+    || raise "ncrcat not found, mppnccombine requires the NetCDF Operators (NCO) tools."
+  ncrcat -O -h "${files[@]}" "$filename" \
+    || raise "ncrcat failed."
 # Combine with mppnccombine
 else
-  ! which ${dir}/mppnccombine.x &>/dev/null && \
-    raise "${dir}/mppnccombine.x executable not found. Please edit ${dir}/Makefile for your system, then generate mppnccombine.x by typing 'make' in the terminal."
-  ${dir}/mppnccombine.x "$filename" "${files[@]}"
-  [ $? -ne 0 ] && raise "mppnccombine.x failed."
+  [ -x ${dir}/mppnccombine.x ] \
+    || raise "${dir}/mppnccombine.x executable not found. Please edit ${dir}/Makefile for your system, then generate mppnccombine.x by typing 'make' in the terminal."
+  ${dir}/mppnccombine.x "$filename" "${files[@]}" \
+    || raise "mppnccombine.x failed."
 fi
 exit 0
