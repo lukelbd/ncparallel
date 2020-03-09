@@ -1,8 +1,8 @@
 # Compile the mppnccombine tool
 # Edit these flags as needed for your system
-CPP = 'pgcc'
-INCLUDE = '-I/usr/include/mpich-x86_64'
-LIBS = '-lnetcdff -lnetcdf -lhdf5 -lhdf5_hl'  # include netcdf libs
+CPP = pgcc
+LIBS = -lnetcdff -lnetcdf -lhdf5 -lhdf5_hl  # include netcdf libs
+INCLUDE = -I/usr/include/mpich-x86_64
 
 .PHONY: clean
 
