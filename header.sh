@@ -9,11 +9,8 @@ raise() {
 
 # Wait for background processes to finish and make sure they were successful
 pwait() {
-  local cmd pids
-  cmd="$1"
-  pids=("${@:2}")
-  for pid in "${pids[@]}"; do
-    wait $pid || raise "At least one of the '$cmd' processes failed."
+  for pid in "${@:2}"; do
+    wait $pid || raise "At least one of the '$1' processes failed."
   done
 }
 
