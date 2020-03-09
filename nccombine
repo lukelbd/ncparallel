@@ -21,6 +21,7 @@ while [ $# -ne 0 ]; do
 done
 [ -n "$files" ] || raise "No input files found."
 [[ "$filename" =~ .nc$ ]] || raise "File $filename does not end in '.nc' extension." # output file
+
 # Get the concatenation dimension
 for file in "${files[@]}"; do
   iname=$(ncdump -h "${files[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
@@ -31,6 +32,7 @@ for file in "${files[@]}"; do
   fi
   dname=$iname
 done
+
 # Test whether concatenation dimension is unlimited
 ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dname &>/dev/null
 [ $? -eq 0 ] && unlimited=true || unlimited=false
@@ -38,7 +40,7 @@ ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dname &>/dev/null
 # Combine files in one of two ways
 # Found out that mppnccombine is *slower* than ncrcat! So if possible, always
 # use ncrcat and do not fix unlimited dimensions!
-# ./mppncdivide -f -d=time test.nc; rm tmp.nc; time ./mppnccombine.x tmp.nc test.*.nc
+# ./mppncdivide -f -d=time test.nc; rm tmp.nc; time ${dir}/mppnccombine.x tmp.nc test.*.nc
 # ./mppncdivide -d=time test.nc; rm tmp.nc; time ncrcat -O test.*.nc tmp.nc
 rm "$filename" 2>/dev/null
 if $unlimited; then
@@ -48,9 +50,9 @@ if $unlimited; then
   [ $? -ne 0 ] && raise "ncrcat failed."
 # Combine with mppnccombine
 else
-  ! which ./mppnccombine.x &>/dev/null && \
-    raise "./mppnccombine.x executable not found. You must compile mppnccombine.c with the make.sh script."
-  ./mppnccombine.x "$filename" "${files[@]}"
+  ! which ${dir}/mppnccombine.x &>/dev/null && \
+    raise "${dir}/mppnccombine.x executable not found. Please edit ${dir}/Makefile for your system, then generate mppnccombine.x by typing 'make' in the terminal."
+  ${dir}/mppnccombine.x "$filename" "${files[@]}"
   [ $? -ne 0 ] && raise "mppnccombine.x failed."
 fi
 exit 0
