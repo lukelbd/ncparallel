@@ -1,28 +1,28 @@
 # What
-This repository introduces the shell script `ncparallel` for
-running an arbitrary script on a NetCDF file in parallel by
-dividing and combining the NetCDF file along an arbitrary dimension.
+This repository introduces the shell command `ncparallel` for
+running arbitrary commands on NetCDF files in parallel by
+dividing and combining files along arbitrary dimensions.
 We use the GFDL Flexible Modelling System `mppnccombine.c` tool for combining datasets along non-record dimensions
 (also see the [`mppnccombine-fast.c`](https://github.com/coecms/mppnccombine-fast)
 tool developed for the Modular Ocean Modelling system).
 
 # Why
 Using this tool won't always result in a speedup. For relatively fast
-scripts, the overhead of creating a bunch of temporary NetCDF
-files can exceed the original script computation time.
+commands, the overhead of creating a bunch of temporary NetCDF
+files can exceed the original command execution time.
 
 However, this tool is exceedingly useful in two situations:
 
-1. For very slow, laborious scripts, performing the computation in parallel will result in a very obvious speedup.
-2. For enormous files, e.g. file sizes approaching or greater than the available RAM, your computer may run out of memory and have to use the hard disk for "virtual" RAM. This gets incredibly slow and will also grind the computer to a crawl, getting in the way of other processes. With this tool, you can use the `-p` and `-n` flags (see below for details) to serially process the file in chunks, eliminating this memory bottleneck.
+1. For very slow, laborious processes, the parallelization will result in a very obvious speedup.
+2. For very large files, e.g. file sizes approaching or greater than the available RAM, your computer may run out of memory and have to use the hard disk for "virtual" RAM. This significantly slows down the process and can grind hard disk access to a crawl, getting in the way of other processes. With this tool, you can use the `-p` and `-n` flags to serially process the file in chunks, eliminating the memory bottleneck.
 <!-- This is great where your computation bottleneck is RAM due to large file sizes. -->
 
 # Installation
-Download this utility with
+Download this repository with
 ```bash
 cd $HOME && git clone https://github.com/lukelbd/ncparallel
 ```
-and add the project to your path by adding the line
+and add the resulting folder to your `PATH` by adding the line
 ```bash
 export PATH="$HOME/ncparallel:$PATH"
 ```
@@ -34,7 +34,7 @@ Example usage is as follows:
 ```bash
 ncparallel -d=lat -p=8 -n=32 command input.nc output.nc
 ```
-Flags are as follows:
+The optional arguments are as follows:
 
 * `-d=NAME`: The dimension name along which we split the file. Defaults to `lat`.
 * `-n=NUM`: The number of file pieces to generate. Defaults to `8`.
@@ -43,21 +43,23 @@ Flags are as follows:
 * `-s`: If passed, silent mode is enabled.
 * `-k`: If passed, temporary files are not deleted.
 
-The first positional argument is the script or command written as you would type it into the command line -- for example, `script.sh`, `'python myscript.py'`, or `'ncap2 -s "math-goes-here"'` (note that the command must be surrounded by quotation marks if it consists of more than one word).
+The first positional argument is the script or command written as you would type it into the command line -- for example, `script.sh`, `'python myscript.py'`, or `'ncap2 -s "math-goes-here"'`. Note that the command must be surrounded by quotation marks if it consists of more than one word.
 The second and third arguments are the final input and output file names.
 <!-- The command must accept two positional arguments: An input file name, and an output file name. -->
 
 For an input file named `input.nc` and output file named `output.nc`, parallel processing is achieved as follows:
 
 1. The input file `input.nc` is split up along some dimension into pieces, in this case named `input.0000.nc`, `input.0001.nc`, etc.
-2. The input command is called on the file pieces serially or in parallel (depending on the `-p` flag), in this case with  `command input.0000.nc output.0000.nc`, `command input.0001.nc output.0001.nc`, etc.
+2. The input command is called on the file pieces serially or in parallel (depending on the value passed to `-p`), in this case with  `command input.0000.nc output.0000.nc`, `command input.0001.nc output.0001.nc`, etc.
 3. The resulting output files are combined along the same dimension into the requested output file name, in this case `output.nc`.
 
 If you do not want parallel processing and instead just want to 
-split up the file into more manageable pieces for your script,
-simply use `-n=1`.
-As explained above, this is very useful for large file sizes, i.e.
-when your script execution time is limited by available memory.
+split up the file into more manageable pieces,
+simply use `-p=1`.
+As explained above, this is very useful
+when your command execution time is limited by available memory.
+<!-- large file sizes, i.e. -->
+<!-- for your command, -->
 <!-- your file size is such that
    - the bottleneck in your execution time is due to memory limitations. -->
 
