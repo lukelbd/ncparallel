@@ -34,7 +34,7 @@ Example usage is as follows:
 ```bash
 ncparallel -d=lat -p=8 -n=32 command input.nc output.nc
 ```
-The first positional argument is the command written as you would type it into the command line -- for example, `./script.sh`, `'python script.py'`, or `'ncap2 -s "math-goes-here"'`. Note that the command must be surrounded by quotation marks if it consists of more than one word.
+The first positional argument is the command written as you would type it into the command line -- for example, `./script.sh`, `'python script.py'`, or `'ncap2 -s "math-goes-here"'`. Note that the command must be surrounded by quotes if it consists of more than one word.
 The second and third arguments are the input and output file names.
 <!-- The command must accept two positional arguments: An input file name, and an output file name. -->
 
