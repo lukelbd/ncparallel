@@ -59,8 +59,7 @@ if $fixrec; then
   $unlimited && flag="--fix_rec_dmn $dimname" # required for mppnccombine
 fi
 
-# Split up the file, making sure to add attributes to that mppnccombine
-# can combine it again.
+# Split up the file and add attributes used by mppnccombine
 # WARNING: The attributes must be long type, not short
 # WARNING: We employ various flags to optimize performance; use hdr_pad so the
 # ncatted do not cause re-reading entire file due to having to shift
@@ -68,16 +67,20 @@ fi
 # improves performance by quite a lot. Current config seems to be the best we can do.
 i=1
 for ni in $(seq 1 $nsplit); do
-  file=${filename%.nc}.$(printf "%04d" $((ni-1))).nc
+  # Select file chunk and add attributes
+  ofile=${filename%.nc}.$(printf "%04d" $((ni-1))).nc
   d1=$(((ni - 1) * ndim / nsplit))  # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
   d2=$((ni * ndim / nsplit - 1))  # e.g. nsplit=10, ndim=200, goes 19, 39, 59
   {
-    ncks -O -h $debug --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag -d $dimname,$d1,$d2 "$filename" "$file" >&2
-    ncatted -O -h -a NumFilesInSet,global,o,l,"$nsplit" "$file"
-    ncatted -O -h -a domain_decomposition,$dimname,o,l,"1,$ndim,$((d1+1)),$((d2+1))" "$file"
+    ncks -O -h $debug --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag \
+      -d $dimname,$d1,$d2 "$filename" "$ofile" >&2
+    ncatted -O -h -a NumFilesInSet,global,o,l,"$nsplit" "$ofile"
+    ncatted -O -h -a domain_decomposition,$dimname,o,l,"1,$ndim,$((d1 + 1)),$((d2 + 1))" "$ofile"
   } &
+
+  # Store process ids and output files
   pids+=($!)
-  files+=("$file")
+  ofiles+=("$ofile")
   if [ $i -eq $pmax ]; then
     i=1
     pwait ncks "${pids[@]}"
@@ -87,5 +90,5 @@ for ni in $(seq 1 $nsplit); do
   fi
 done
 pwait ncks "${pids[@]}"
-$silent || echo "${files[@]}"
+$silent || echo "${ofiles[@]}"
 exit 0

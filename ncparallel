@@ -96,14 +96,17 @@ time {
     prefix="${output%.nc}" # just trim the extension
     suffix="${ifile:${#ifile}-7}" # 0000.nc, 0001.nc, etc.
     ofile="${prefix}.${suffix}"
+
     # Run command
     if $reverse; then
       $cmd "$ofile" "$ifile" &>/dev/null & # trailing ampersand sends process to background
     else
       $cmd "$ifile" "$ofile" &>/dev/null & # trailing ampersand sends process to background
     fi
-    pids+=($!) # store process IDs in another bash array
-    outputs+=("$ofile") # store output files in a bash array
+
+    # Store process IDs and output files
+    pids+=($!)
+    outputs+=("$ofile")
     if [ $i -eq $pmax ]; then
       i=1; pwait "$cmd" "${pids[@]}"
       unset pids
@@ -114,7 +117,6 @@ time {
   pwait "$cmd" "${pids[@]}"
   $silent || echo "Output files: ${outputs[*]##*/}"
 }
-pwait "$cmd" "${pids[@]}"
 
 # Finally combine, and remove the temporary files
 # generated for parallel processing
