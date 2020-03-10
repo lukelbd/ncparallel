@@ -34,15 +34,6 @@ Example usage is as follows:
 ```bash
 ncparallel -d=lat -p=8 -n=32 command input.nc output.nc
 ```
-The optional arguments are as follows:
-
-* `-d=NAME`: The dimension name along which we split the file. Defaults to `lat`.
-* `-n=NUM`: The number of file pieces to generate. Defaults to `8`.
-* `-p=NUM`: The maximum number of parallel processes. Defaults to the `-n` argument but can also be smaller.
-* `-f`: If passed and dimension is a "record" (i.e. unlimited) dimension, it is changed to fixed length.
-* `-s`: If passed, silent mode is enabled.
-* `-k`: If passed, temporary files are not deleted.
-
 The first positional argument is the script or command written as you would type it into the command line -- for example, `script.sh`, `'python myscript.py'`, or `'ncap2 -s "math-goes-here"'`. Note that the command must be surrounded by quotation marks if it consists of more than one word.
 The second and third arguments are the final input and output file names.
 <!-- The command must accept two positional arguments: An input file name, and an output file name. -->
@@ -52,6 +43,15 @@ For an input file named `input.nc` and output file named `output.nc`, parallel p
 1. The input file `input.nc` is split up along some dimension into pieces, in this case named `input.0000.nc`, `input.0001.nc`, etc.
 2. The input command is called on the file pieces serially or in parallel (depending on the value passed to `-p`), in this case with  `command input.0000.nc output.0000.nc`, `command input.0001.nc output.0001.nc`, etc.
 3. The resulting output files are combined along the same dimension into the requested output file name, in this case `output.nc`.
+
+The optional arguments are as follows:
+
+* `-d=NAME`: The dimension name along which we split the file. Defaults to `lat`.
+* `-n=NUM`: The number of file pieces to generate. Defaults to `8`.
+* `-p=NUM`: The maximum number of parallel processes. Defaults to the `-n` argument but can also be smaller.
+* `-f`: If passed and dimension is a "record" (i.e. unlimited) dimension, it is changed to fixed length.
+* `-s`: If passed, silent mode is enabled.
+* `-k`: If passed, temporary files are not deleted.
 
 If you do not want parallel processing and instead just want to
 split up the file into more manageable pieces,
