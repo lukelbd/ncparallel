@@ -45,7 +45,7 @@ ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
 rm "$filename" 2>/dev/null
 if $unlimited; then
   which ncrcat &>/dev/null \
-    || raise "ncrcat not found, mppnccombine requires the NetCDF Operators (NCO) tools."
+    || raise "ncrcat not found. Please install the NetCDF Operators (NCO) or use the '-f' flag."
   ncrcat -O -h "${files[@]}" "$filename" \
     || raise "ncrcat failed."
 # Combine with mppnccombine
