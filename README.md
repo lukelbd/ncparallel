@@ -53,9 +53,9 @@ For an input file named `input.nc` and output file named `output.nc`, parallel p
 2. The input command is called on the file pieces serially or in parallel (depending on the value passed to `-p`), in this case with  `command input.0000.nc output.0000.nc`, `command input.0001.nc output.0001.nc`, etc.
 3. The resulting output files are combined along the same dimension into the requested output file name, in this case `output.nc`.
 
-If you do not want parallel processing and instead just want to 
+If you do not want parallel processing and instead just want to
 split up the file into more manageable pieces,
-simply use `-p=1`.
+use `-p=1`.
 As explained above, this is very useful
 when your command execution time is limited by available memory.
 <!-- large file sizes, i.e. -->
