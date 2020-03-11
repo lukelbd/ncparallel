@@ -2,7 +2,7 @@
 # Helper functions sourced by main scripts
 # Print message to standard error and exit main process
 raise() {
-  echo "Usage: $usage"
+  echo "Usage: $usage" 1>&2
   echo "Error: $*" 1>&2
   exit 1
 }
