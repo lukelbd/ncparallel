@@ -3,7 +3,7 @@
 # Print message to standard error and exit main process
 raise() {
   echo "Usage: $usage"
-  echo "Error: $1" 1>&2
+  echo "Error: $*" 1>&2
   exit 1
 }
 
@@ -13,4 +13,3 @@ pwait() {
     wait $pid || raise "At least one of the '$1' processes failed."
   done
 }
-
