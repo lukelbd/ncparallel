@@ -32,16 +32,16 @@ does not exist, you can create it, and its contents should be run every time you
 # Usage
 Example usage is as follows:
 ```bash
-ncparallel -d=lat -p=8 -n=32 command input.nc output.nc
+ncparallel -d=lat -p=8 -n=32 command input1.nc [input2.nc ... inputN.nc] output.nc
 ```
 The first positional argument is the command written as you would type it into the command line -- for example, `./script.sh`, `'python script.py'`, or `'ncap2 -s "math-goes-here"'`. Note that the command must be surrounded by quotes if it consists of more than one word.
-The second and third arguments are the input and output file names.
+The final positional arguments are the input file name(s) and the output file name.
 <!-- The command must accept two positional arguments: An input file name, and an output file name. -->
 
-For an input file named `input.nc` and output file named `output.nc`, parallel processing is achieved as follows:
+For input file(s) named `input1.nc`, `input2.nc`, etc. and an output file named `output.nc`, parallel processing is achieved as follows:
 
-1. The input file `input.nc` is split up along some dimension into pieces, in this case named `input.0000.nc`, `input.0001.nc`, etc.
-2. The input command is called on the file pieces serially or in parallel (depending on the value passed to `-p`), in this case with  `command input.0000.nc output.0000.nc`, `command input.0001.nc output.0001.nc`, etc.
+1. Each input file `inputN.nc` is split up along some dimension into pieces, in this case named `inputN.0000.nc`, `inputN.0001.nc`, etc.
+2. The input command is called on the file pieces serially or in parallel (depending on the value passed to `-p`), in this case with  `command input1.0000.nc [... inputN.0000.nc] output.0000.nc`, `command input1.0001.nc [... inputN.000.nc] output.0001.nc`, etc.
 3. The resulting output files are combined along the same dimension into the requested output file name, in this case `output.nc`.
 
 The optional arguments are as follows:
