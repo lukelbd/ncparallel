@@ -79,10 +79,10 @@ This task is very computationally intensive, and the server is well-suited for
 parallelization, so `ncparallel` delivers an obvious speedup. In this case,
 the optimal performance was reached by splitting up the latitude dimension
 into 16 chunks and running the 16 processes in parallel. Restricting the number
-of parallel processes only resulted in a speedup for 64 chunks,
-and splitting up the file into more chunks produced diminishing returns.
-The optimal performance for you will depend on your data, your code,
-and your system architecture.
+of parallel processes never resulted in a speedup because the process was not
+limited by available memory, and splitting up the file into more chunks produced
+diminishing returns.  The optimal performance for you will depend on your data,
+your code, and your system architecture.
 
 ```sh
 Sample file: ../test.nc
