@@ -96,16 +96,12 @@ real 106s user 78s sys 20s
 Number of files: 2
 Parallelization: 2
 real 80s user 90s sys 38s
-Parallelization: 1
-real 143s user 94s sys 41s
 
 Number of files: 4
 Parallelization: 4
 real 53s user 107s sys 31s
 Parallelization: 2
 real 81s user 102s sys 31s
-Parallelization: 1
-real 148s user 109s sys 32s
 
 Number of files: 8
 Parallelization: 8
@@ -114,8 +110,6 @@ Parallelization: 4
 real 61s user 130s sys 35s
 Parallelization: 2
 real 94s user 123s sys 33s
-Parallelization: 1
-real 192s user 137s sys 37s
 
 Number of files: 16
 Parallelization: 16
@@ -126,8 +120,6 @@ Parallelization: 4
 real 75s user 177s sys 43s
 Parallelization: 2
 real 127s user 164s sys 41s
-Parallelization: 1
-real 251s user 190s sys 48s
 
 Number of files: 32
 Parallelization: 32
@@ -140,7 +132,5 @@ Parallelization: 4
 real 106s user 259s sys 56s
 Parallelization: 2
 real 178s user 249s sys 56s
-Parallelization: 1
-real 359s user 282s sys 64s
 ```
 

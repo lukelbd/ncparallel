@@ -11,14 +11,14 @@ output="../tmp.nc"
 script="./spectra.py"
 # script="./fluxes.py"
 export TIMEFORMAT=$'real %0Rs user %0Us sys %0Ss'
-rm "$log" 2>/dev/null
 
 # Dimension and splits
 # Perhaps parallel along pressure is faster?
-# dimname=plev
-# nsplits="1 2 4 10 20"
-dimname=lat
-nsplits="1 2 4 8 16 32 64"
+dimname=plev
+nsplits="1 2 4 10 20 60"
+# dimname=lat
+# nsplits="1 2 4 8 16 32 64"
+# rm "$log" 2>/dev/null
 
 # Function that loops through numbers of processors *and* parallel files
 # NOTE: Passing -n=1 to program just
@@ -34,7 +34,7 @@ benchmark() {
     p=$n
     echo
     echo "Number of files: $n"
-    while [ $p -gt 0 ]; do
+    while [[ $n -gt 1 && $p -gt 1 ]] || [[ $p -gt 0 ]]; do
       echo "Parallelization: $p"
       time {
         # for _ in 1; do  # no repeat
