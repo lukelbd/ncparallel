@@ -164,7 +164,6 @@ for flux in ('ehf', 'emf', 'ke', 'ke_tropic', 'ke_clinic'):
         out = xr.Dataset(
             {},
             coords={'f': f, 'plev': plev, 'lat': lat, 'k': k},
-            attrs=data.attrs,
         )
 
     # Save to file

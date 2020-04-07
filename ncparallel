@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The driver script
-usage="ncparallel [OPTIONS...] [-d=DIMNAME] [-p=NP] [-n=NF] COMMAND INPUT1 [INPUT2 ... INPUTN] OUTPUT"
+usage="ncparallel [OPTIONS...] [-d=DIM] [-p=NP] [-n=NF] COMMAND INPUT1 [INPUT2 ...] OUTPUT"
 doc="This script splits up an input NetCDF file into chunks, runs a script
 on some or all of those chunks in parallel, and merges the results into
 an output NetCDF file.
@@ -130,8 +130,8 @@ done
 # Helper function that runs each process
 run() {
   # Arguments are the file index, output file, and input files.
-  local num input_num inputs_num output_num
-  local d1 d2 flag input
+  local num output_num input_num inputs_num
+  local d1 d2 flag input args
   num="$1"
   output_num="$2"
   inputs_num=("${@:3}")
@@ -158,22 +158,21 @@ run() {
 
   # Run command
   if $reverse; then
-    echo "Running command: $cmd $output_num ${inputs_num[*]}"
-    $cmd "$output_num" "${inputs_num[@]}"
+    args=("$output_num" "${inputs_num[@]}")
   else
-    echo "Running command: $cmd ${inputs_num[*]} $output_num"
-    $cmd "${inputs_num[@]}" "$output_num"
+    args=("${inputs_num[@]}" "$output_num" )
   fi
+  echo "Running command: $cmd ${args[*]}"
+  $cmd "${args[@]}" || raise "Command failed: $cmd ${args[*]}"
+  [ -r "$output_num" ] || raise "Command failed to generate output file ${output_num}."
 
   # Add special attributes
-  [ -r "$output_num" ] || raise "Failed to generate output file ${output_num}."
   ncatted -O -h \
     -a NumFilesInSet,global,o,l,"$nsplit" \
     -a domain_decomposition,$dimname,o,l,"1,$ndim,$((d1 + 1)),$((d2 + 1))" \
     "$output_num" \
     || raise "Failed to add nccombine attributes to output file ${output_num}."
 }
-
 
 # Generate background processes for each file, for example a python script
 # that creates a new NetCDF file from some input NetCDF file.
@@ -217,62 +216,3 @@ time {
     || raise "nccombine failed."
 }
 exit 0
-
-#-----------------------------------------------------------------------------#
-# Old method: Perform nccombine separately
-#-----------------------------------------------------------------------------#
-## Divide into smaller files and collect names in a bash array
-## Format will be input.0000.nc, input.0001.nc, etc.
-## TODO: Divide up to n blocks
-#$silent || echo "Dividing file: ${input##*/}"
-#time {
-#  inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dimname $flags "$input")) \
-#    || raise "ncdivide failed."
-#}
-#
-## Generate background processes for each file, for example a python script
-## that creates a new NetCDF file from some input NetCDF file.
-## WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
-## attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
-#i=1
-#time {
-#  $silent || echo "Running $cmd"
-#  $silent || echo "Input files: ${inputs[*]##*/}"
-#  for ifile in "${inputs[@]}"; do
-#    # Output name
-#    prefix=${output%.nc} # just trim the extension
-#    suffix=${ifile:${#ifile}-7} # 0000.nc, 0001.nc, etc.
-#    ofile=${prefix}.${suffix}
-#    log=${output%/*}/${suffix%.nc}.log
-#
-#    # Run command
-#    if $reverse; then
-#      $cmd "$ofile" "$ifile" &>$log & # trailing ampersand sends process to background
-#    else
-#      $cmd "$ifile" "$ofile" &>$log & # trailing ampersand sends process to background
-#    fi
-#
-#    # Store process IDs and output files
-#    pids+=($!)
-#    logs+=("$log")
-#    outputs_tmp+=("$ofile")
-#    if [ $i -eq $pmax ]; then
-#      i=1
-#      pwait "$cmd" "${pids[@]}"
-#      unset pids
-#    else
-#      i=$((i + 1))
-#    fi
-#  done
-#  pwait "$cmd" "${pids[@]}"
-#  $silent || echo "Output files: ${outputs_tmp[*]##*/}"
-#}
-#
-## Finally combine, and remove the temporary files
-## generated for parallel processing
-#$silent || echo "Combining into file: ${output##*/}"
-#time {
-#  $dir/nccombine "$output" "${outputs_tmp[@]}" \
-#    || raise "nccombine failed."
-#}
-#exit 0
