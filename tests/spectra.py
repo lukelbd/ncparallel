@@ -148,7 +148,6 @@ for flux in ('ehf', 'emf', 'ke', 'ke_tropic', 'ke_clinic'):
         dx=dt,
         dy=dlon,
         axes=axes,
-        detrend='constant',
         wintype=wintype,
         nperseg=days.size,
         coherence=False,
