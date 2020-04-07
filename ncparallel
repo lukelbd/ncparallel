@@ -69,7 +69,7 @@ cleanup() {
   rm "${outputs_tmp[@]}" "${inputs_tmp[@]}" 2>/dev/null
   [ "$signal" -eq 0 ] && rm "${logs[@]}"
 }
-
+trap cleanup EXIT  # remove files on exit or interruption!
 
 # Variables
 cmd="${args[0]}"
