@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The driver script
-usage="ncparallel [OPTIONS...] [-d=DIMNAME] [-p=NP] [-n=NF] COMMAND INPUT OUTPUT"
+usage="ncparallel [OPTIONS...] [-d=DIMNAME] [-p=NP] [-n=NF] COMMAND INPUT1 [INPUT2 ... INPUTN] OUTPUT"
 doc="This script splits up an input NetCDF file into chunks, runs a script
 on some or all of those chunks in parallel, and merges the results into
 an output NetCDF file.
@@ -13,20 +13,26 @@ Positional arguments
 
   COMMAND  A command-line command, e.g. './myscript.sh' or a quoted
            string like 'python file.py'.
-  INPUT    The input NetCDF file name.
-  OUTPUT   The final output NetCDF file name.
+  INPUT    The input NetCDF file name(s).
+  OUTPUT   The output NetCDF file name.
 
 Optional arguments
 
-  -h   Print this message.
-  -f   If passed and dimension is a 'record' (i.e. unlimited) dimension, it is changed to fixed length.
-  -s   If passed, silent mode is enabled.
-  -k   If passed, temporary files and log files are not deleted.
-  -r   If passed, order of INPUT and OUTPUT is reversed.
   -d=* The dimension name along which we split the file. Defaults to 'lat'.
-  -n=* The number of file pieces to generate. Defaults to '8'.
-  -p=* The maximum number of parallel processes. This defaults to the -n
-       argument but can also be smaller.
+  -n=* The number of file pieces to generate. Defaults to 8.
+  -p=* The maximum number of parallel processes. Defaults to -n but can
+       also be smaller.
+
+Flags
+
+  -h   Print this message.
+  -r   If passed, the OUTPUT file name comes before the INPUT file name(s)
+       when calling this function and when passing arugments to COMMAND.
+  -f   If passed and -d is a record (i.e. unlimited) dimension, the dimension
+       has fixed length in the OUTPUT file.
+  -k   If passed, temporary files and log files are not deleted. By default,
+       log files are only kept if a process failed.
+  -s   If passed, messages are silenced.
 "
 # Get arguments
 # TODO: Support for nsplit=1, just run the command!
