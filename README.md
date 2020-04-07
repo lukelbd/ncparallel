@@ -41,7 +41,7 @@ The final positional arguments are the input file name(s) and the output file na
 For input file(s) named `input1.nc`, `input2.nc`, etc. and an output file named `output.nc`, parallel processing is achieved as follows:
 
 1. Each input file `inputN.nc` is split up along some dimension into pieces, in this case named `inputN.0000.nc`, `inputN.0001.nc`, etc.
-2. The input command is called on the file pieces serially or in parallel (depending on the value passed to `-p`), in this case with  `command input1.0000.nc [... inputN.0000.nc] output.0000.nc`, `command input1.0001.nc [... inputN.000.nc] output.0001.nc`, etc.
+2. The input command is called on the file pieces serially or in parallel (depending on the value passed to `-p`), in this case with  `command input1.0000.nc [input2.0000.nc ... inputN.0000.nc] output.0000.nc`, `command input1.0001.nc [input2.0001.nc ... inputN.000.nc] output.0001.nc`, etc.
 3. The resulting output files are combined along the same dimension into the requested output file name, in this case `output.nc`.
 
 The optional arguments are as follows:
