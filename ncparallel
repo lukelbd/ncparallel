@@ -59,7 +59,6 @@ while [ $# -ne 0 ]; do
   shift
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-[ ${#args[@]} -ne 3 ] && raise "Requires exactly 3 positional arguments."
 
 # Set up exit trap
 cleanup() {
@@ -71,18 +70,22 @@ cleanup() {
 
 
 # Variables
-dir=${0%/*}
 cmd="${args[0]}"
+args=("${args[@]:1}")
+n=${#args[@]}
+[ $n -ge 2 ] || raise "At least 2 filenames are required, but got $n: ${args[*]}"
+for arg in "${args[@]}"; do
+  [ -r "$arg" ] || raise "File \"$arg\" not found."
+done
 if $reverse; then
-  input="${args[2]}"
-  output="${args[1]}"
+  inputs=("${args[@]:1:n-1}")
+  output="${args[0]}"
 else
-  input="${args[1]}"
-  output="${args[2]}"
+  inputs=("${args[@]::n-1}")
+  output="${args[n-1]}"
 fi
-[[ "$input" =~ "/" ]] || input="./$input"
-[[ "$output" =~ "/" ]] || output="./$output"
-[ -r "$input" ] || raise "Input file \"$input\" not found."
+[ ${#inputs[@]} -eq 1 ] || echo "Error: Only one input filename allowed."
+input="${inputs[0]}"
 
 # Time format
 if $silent; then
@@ -95,9 +98,9 @@ fi
 if [ $nsplit -eq 1 ]; then
   echo "Warning: You passed -n=1. Not dividing up file."
   if $reverse; then
-    $cmd "$output" "$input"
+    $cmd "$output" "${inputs[@]}"
   else
-    $cmd "$input" "$output"
+    $cmd "${inputs[@]}" "$output"
   fi
   exit  # with code from command
 fi
@@ -105,7 +108,7 @@ fi
 # Divide into smaller files and collect names in a bash array
 # Format will be input.0000.nc, input.0001.nc, etc.
 # TODO: Divide up to n blocks
-$silent || echo "Dividing file: ${input##*/}"
+$silent || echo "Dividing file(s): ${input[*]##*/}"
 time {
   inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dname $flags "$input")) \
     || raise "ncdivide failed."
