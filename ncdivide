@@ -35,26 +35,26 @@ while [ $# -ne 0 ]; do
     -f) fixrec=true ;; # fix record dimension?
     -s) silent=true ;;
     -*) raise "Unknown flag ${1}." ;;
-    *)  [ -n "$filename" ] && raise "Got multiple files."; filename="$1" ;;
+    *)  [ -n "$input" ] && raise "Got multiple files."; input="$1" ;;
   esac
   shift
 done
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-[ -n "$filename" ] || raise "Must pass input filename."
-[[ "$filename" =~ .nc$ ]] || raise "File does not end in '.nc' extension."
+[ -n "$input" ] || raise "Must pass input filename."
+[[ "$input" =~ .nc$ ]] || raise "File does not end in '.nc' extension."
 which ncks &>/dev/null || raise "ncks not found, ncdivide requires the NetCDF Operators (NCO) tools."
 
 # Get dimension size by parsing ncks
 # Could also parse ncdump, but this script requires NCO already so why not
 # See: http://nco.sourceforge.net/nco.html#ncdmnsz
-ndim=$(ncks --trd -m -M "$filename" | grep -E -i ": ${dimname}, size =" | cut -f 7 -d ' ' | uniq | xargs)
-[ -n "$ndim" ] || raise "Dimension ${dimname} not found in filename ${filename}."
+ndim=$(ncks --trd -m -M "$input" | grep -E -i ": ${dimname}, size =" | cut -f 7 -d ' ' | uniq | xargs)
+[ -n "$ndim" ] || raise "Dimension ${dimname} not found in filename ${input}."
 [[ $ndim =~ ^[0-9]+$ ]] || raise "Got invalid size ${ndim} for dimension ${dimname}."
 [ $((ndim % nsplit)) -eq 0 ] || raise "Incompatible dimension size ${ndim} for ${nsplit} splits."
 
 # Optionally fix the record dimension
 if $fixrec; then
-  ncdump -h $filename | grep 'UNLIMITED' | grep $dimname &>/dev/null \
+  ncdump -h "$input" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
     && unlimited=true || unlimited=false
   $unlimited && flag="--fix_rec_dmn $dimname" # required for mppnccombine
 fi
@@ -68,12 +68,12 @@ fi
 i=1
 for ni in $(seq 1 $nsplit); do
   # Select file chunk and add attributes
-  ofile=${filename%.nc}.$(printf "%04d" $((ni-1))).nc
+  ofile=${input%.nc}.$(printf "%04d" $((ni-1))).nc
   d1=$(((ni - 1) * ndim / nsplit))  # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
   d2=$((ni * ndim / nsplit - 1))  # e.g. nsplit=10, ndim=200, goes 19, 39, 59
   {
     ncks -O -h $debug --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag \
-      -d $dimname,$d1,$d2 "$filename" "$ofile" >&2
+      -d $dimname,$d1,$d2 "$input" "$ofile" >&2
     ncatted -O -h -a NumFilesInSet,global,o,l,"$nsplit" "$ofile"
     ncatted -O -h -a domain_decomposition,$dimname,o,l,"1,$ndim,$((d1 + 1)),$((d2 + 1))" "$ofile"
   } &
