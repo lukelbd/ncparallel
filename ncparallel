@@ -35,21 +35,23 @@ Flags
   -s   If passed, messages are silenced.
 "
 # Get arguments
-# TODO: Support for nsplit=1, just run the command!
+# debug='-D 2'
+debug=''
 nsplit=8
-dname=lat # can also split along time dimension?
+dimname=lat # can also split along time dimension?
 keep=false
 reverse=false
 silent=false
+fixrec=false
 dir=${0%/*}
 source $dir/header.sh
 while [ $# -ne 0 ]; do
   case "$1" in
     -h) echo "$doc" >&2 && exit 0 ;;
     -n=*) nsplit="${1#*=}" ;;
-    -d=*) dname="${1#*=}" ;;
+    -d=*) dimname="${1#*=}" ;;
     -p=*) pmax="${1#*=}" ;;
-    -f) flags="-f" ;;
+    -f) fixrec=true ;;
     -k) keep=true ;;
     -r) reverse=true ;;
     -s) silent=true ;;
@@ -105,40 +107,61 @@ if [ $nsplit -eq 1 ]; then
   exit  # with code from command
 fi
 
-# Divide into smaller files and collect names in a bash array
-# Format will be input.0000.nc, input.0001.nc, etc.
-# TODO: Divide up to n blocks
-$silent || echo "Dividing file(s): ${input[*]##*/}"
-time {
-  inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dname $flags "$input")) \
-    || raise "ncdivide failed."
-}
+# Get dimension size by parsing ncks
+# Could also parse ncdump, but this script requires NCO already so why not
+# See: http://nco.sourceforge.net/nco.html#ncdmnsz
+ndim=$(ncks --trd -m -M "$input" | grep -E -i ": ${dimname}, size =" | cut -f 7 -d ' ' | uniq | xargs)
+[ -n "$ndim" ] || raise "Dimension ${dimname} not found in filename ${input}."
+[[ $ndim =~ ^[0-9]+$ ]] || raise "Got invalid size ${ndim} for dimension ${dimname}."
+[ $((ndim % nsplit)) -eq 0 ] || raise "Incompatible dimension size ${ndim} for ${nsplit} splits."
 
+# Optionally fix the record dimension
+if $fixrec; then
+  ncdump -h "$input" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
+    && unlimited=true || unlimited=false
+  $unlimited && flag="--fix_rec_dmn $dimname" # required for mppnccombine
+fi
+
+#-----------------------------------------------------------------------------#
+# New method: Perform ncdivide inline
+#-----------------------------------------------------------------------------#
 # Generate background processes for each file, for example a python script
 # that creates a new NetCDF file from some input NetCDF file.
 # WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
 # attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
 i=1
 time {
-  $silent || echo "Running $cmd"
-  $silent || echo "Input files: ${inputs[*]##*/}"
-  for ifile in "${inputs[@]}"; do
+  $silent || echo "Running '$cmd'"
+  for ni in $(seq 1 $nsplit); do
     # Output name
+    ifile=${input%.nc}.$(printf "%04d" $((ni-1))).nc
     prefix=${output%.nc} # just trim the extension
     suffix=${ifile:${#ifile}-7} # 0000.nc, 0001.nc, etc.
     ofile=${prefix}.${suffix}
     log=${output%/*}/${suffix%.nc}.log
 
-    # Run command
-    if $reverse; then
-      $cmd "$ofile" "$ifile" &>$log & # trailing ampersand sends process to background
-    else
-      $cmd "$ifile" "$ofile" &>$log & # trailing ampersand sends process to background
-    fi
+    # Slice up input file and run command with slice
+    d1=$(((ni - 1) * ndim / nsplit))  # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
+    d2=$((ni * ndim / nsplit - 1))  # e.g. nsplit=10, ndim=200, goes 19, 39, 59
+    {
+      ncks -O -h $debug \
+        --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag \
+        -d $dimname,$d1,$d2 "$input" "$ifile" >&2
+      ncatted -O -h \
+        -a NumFilesInSet,global,o,l,"$nsplit" \
+        -a domain_decomposition,$dimname,o,l,"1,$ndim,$((d1 + 1)),$((d2 + 1))" \
+        "$ifile"
+      if $reverse; then
+        $cmd "$ofile" "$ifile"
+      else
+        $cmd "$ifile" "$ofile"
+      fi
+    } &>$log &
 
     # Store process IDs and output files
     pids+=($!)
     logs+=("$log")
+    inputs+=("$ifile")
     outputs+=("$ofile")
     if [ $i -eq $pmax ]; then
       i=1
@@ -149,7 +172,6 @@ time {
     fi
   done
   pwait "$cmd" "${pids[@]}"
-  $silent || echo "Output files: ${outputs[*]##*/}"
 }
 
 # Finally combine, and remove the temporary files
@@ -160,3 +182,62 @@ time {
     || raise "nccombine failed."
 }
 exit 0
+
+#-----------------------------------------------------------------------------#
+# Old method: Perform nccombine separately
+#-----------------------------------------------------------------------------#
+## Divide into smaller files and collect names in a bash array
+## Format will be input.0000.nc, input.0001.nc, etc.
+## TODO: Divide up to n blocks
+#$silent || echo "Dividing file: ${input##*/}"
+#time {
+#  inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dimname $flags "$input")) \
+#    || raise "ncdivide failed."
+#}
+#
+## Generate background processes for each file, for example a python script
+## that creates a new NetCDF file from some input NetCDF file.
+## WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
+## attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
+#i=1
+#time {
+#  $silent || echo "Running $cmd"
+#  $silent || echo "Input files: ${inputs[*]##*/}"
+#  for ifile in "${inputs[@]}"; do
+#    # Output name
+#    prefix=${output%.nc} # just trim the extension
+#    suffix=${ifile:${#ifile}-7} # 0000.nc, 0001.nc, etc.
+#    ofile=${prefix}.${suffix}
+#    log=${output%/*}/${suffix%.nc}.log
+#
+#    # Run command
+#    if $reverse; then
+#      $cmd "$ofile" "$ifile" &>$log & # trailing ampersand sends process to background
+#    else
+#      $cmd "$ifile" "$ofile" &>$log & # trailing ampersand sends process to background
+#    fi
+#
+#    # Store process IDs and output files
+#    pids+=($!)
+#    logs+=("$log")
+#    outputs+=("$ofile")
+#    if [ $i -eq $pmax ]; then
+#      i=1
+#      pwait "$cmd" "${pids[@]}"
+#      unset pids
+#    else
+#      i=$((i + 1))
+#    fi
+#  done
+#  pwait "$cmd" "${pids[@]}"
+#  $silent || echo "Output files: ${outputs[*]##*/}"
+#}
+#
+## Finally combine, and remove the temporary files
+## generated for parallel processing
+#$silent || echo "Combining into file: ${output##*/}"
+#time {
+#  $dir/nccombine "$output" "${outputs[@]}" \
+#    || raise "nccombine failed."
+#}
+#exit 0
