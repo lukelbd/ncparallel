@@ -86,7 +86,6 @@ else
   inputs=("${args[@]::n-1}")
   output="${args[n-1]}"
 fi
-[ ${#inputs[@]} -eq 1 ] || echo "Error: Only one input filename allowed."
 input="${inputs[0]}"
 
 # Time format
