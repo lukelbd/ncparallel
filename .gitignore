@@ -1,6 +1,4 @@
 # Vim session files and swap files
-test*
-tmp*
 *.log
 .vimsession
 .*.sw[a-z]
