@@ -40,26 +40,51 @@ The final positional arguments are the input file name(s) and the output file na
 
 For input file(s) named `input1.nc`, `input2.nc`, etc. and an output file named `output.nc`, parallel processing is achieved as follows:
 
-1. Each input file `inputN.nc` is split up along some dimension into pieces, in this case named `inputN.0000.nc`, `inputN.0001.nc`, etc.
-2. The input command is called on the file pieces serially or in parallel (depending on the value passed to `-p`), in this case with  `command input1.0000.nc [input2.0000.nc ... inputN.0000.nc] output.0000.nc`, etc.
+1. Each input file `inputN.nc` is split up along some dimension into chunks, in this case named `inputN.0000.nc`, `inputN.0001.nc`, etc.
+2. The input command is called on the file chunks serially or in parallel (depending on the value passed to `-p`), in this case with  `command input1.0000.nc [input2.0000.nc ... inputN.0000.nc] output.0000.nc`, etc.
 3. The resulting output files are combined along the same dimension into the requested output file name, in this case `output.nc`.
 
 The optional arguments are as follows:
 
 * `-d=NAME`: The dimension name along which we split the file. Defaults to `lat`.
-* `-n=NUM`: The number of file pieces to generate. Defaults to `8`.
+* `-n=NUM`: The number of file chunks to generate. Defaults to `8`.
 * `-p=NUM`: The maximum number of parallel processes. Defaults to the `-n` argument but can also be smaller.
-* `-f`: If passed and dimension is a "record" (i.e. unlimited) dimension, it is changed to fixed length.
+
+If you do not want parallel processing and instead just want to
+split up the file into more manageable chunks for your available RAM,
+simply use `-p=1`.
+As explained above, this is very useful
+when your command execution time is limited by available memory.
+
+The flags are as follows:
+
+* `-h`: Print help information.
+* `-r`: If passed, the output file comes before in the input file(s), rather than after.
+* `-f`: If passed and dimension is has unlimited length, it is changed to fixed length.
 * `-s`: If passed, silent mode is enabled.
 * `-k`: If passed, temporary files are not deleted.
 
-If you do not want parallel processing and instead just want to
-split up the file into more manageable pieces,
-use `-p=1`.
-As explained above, this is very useful
-when your command execution time is limited by available memory.
 <!-- large file sizes, i.e. -->
 <!-- for your command, -->
 <!-- your file size is such that
    - the bottleneck in your execution time is due to memory limitations. -->
+
+
+# Performance
+
+Seeing is believing. The below shows performance metrics for longitude-time Randel
+and Held (1991) spectral decompositions of a 400MB file with 64 latitudes
+on a high-performance server with 32 cores and 32GB of RAM.
+
+This task is very computationally intensive, and the server is well-suited for
+parallelization, so `ncparallel` delivers an obvious speedup. In this case,
+the optimal performance was reached by splitting up the latitude dimension
+into 16 chunks and running the 16 processes in parallel. Restricting the number
+of parallel processes only resulted in a speedup for 64 chunks,
+and splitting up the file into more chunks produced diminishing returns.
+The optimal performance for you will depend on your data, your code,
+and your system architecture.
+
+```sh
+```
 

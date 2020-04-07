@@ -19,9 +19,9 @@ Positional arguments
 Optional arguments
 
   -d=* The dimension name along which we split the file. Defaults to 'lat'.
-  -n=* The number of file pieces to generate. Defaults to 8.
-  -p=* The maximum number of parallel processes. Defaults to -n but can
-       also be smaller.
+  -n=* The number of file chunks to generate. Defaults to 8.
+  -p=* The maximum number of parallel processes. Defaults to the number of
+       file chunks but also be smaller.
 
 Flags
 
