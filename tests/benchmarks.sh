@@ -15,7 +15,7 @@ export TIMEFORMAT=$'real %0Rs user %0Us sys %0Ss'
 # Dimension and splits
 # Perhaps parallel along pressure is faster?
 dimname=plev
-nsplits="1 2 4 10 20 60"
+nsplits="1 2 4 10 20"
 # dimname=lat
 # nsplits="1 2 4 8 16 32 64"
 # rm "$log" 2>/dev/null
