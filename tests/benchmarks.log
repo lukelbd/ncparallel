@@ -1,0 +1,80 @@
+Sample file: /mdata1/ldavis/hs1_base_t42l20s/netcdf/2xdaily_inst_full.d00500-d00600.nc
+Sample script: ./../pressure_spectra.py
+
+Number of files: 1
+Parallelization: 1
+real 136s user 1327s sys 147s (1082.60%)
+
+Number of files: 2
+Parallelization: 2
+real 121s user 1854s sys 219s (1707.08%)
+Parallelization: 1
+real 198s user 1379s sys 175s (783.24%)
+
+Number of files: 4
+Parallelization: 4
+real 121s user 1839s sys 359s (1817.17%)
+Parallelization: 2
+real 125s user 1875s sys 209s (1663.64%)
+Parallelization: 1
+real 216s user 1376s sys 162s (711.73%)
+
+Number of files: 8
+Parallelization: 8
+real 111s user 1927s sys 465s (2151.86%)
+Parallelization: 4
+real 117s user 1911s sys 368s (1933.44%)
+Parallelization: 2
+real 135s user 1855s sys 212s (1527.48%)
+Parallelization: 1
+real 241s user 1467s sys 175s (679.81%)
+
+Number of files: 16
+Parallelization: 16
+real 114s user 1872s sys 574s (2141.41%)
+Parallelization: 8
+real 120s user 2030s sys 509s (2111.56%)
+Parallelization: 4
+real 133s user 2023s sys 391s (1814.57%)
+Parallelization: 2
+real 180s user 1947s sys 238s (1210.33%)
+Parallelization: 1
+real 314s user 1596s sys 203s (571.69%)
+
+Number of files: 32
+Parallelization: 32
+real 139s user 2284s sys 1373s (2621.89%)
+Parallelization: 16
+real 138s user 2240s sys 840s (2225.06%)
+Parallelization: 8
+real 141s user 2283s sys 584s (2021.68%)
+Parallelization: 4
+real 201s user 2323s sys 470s (1389.77%)
+Parallelization: 2
+real 269s user 2277s sys 299s (957.91%)
+Parallelization: 1
+real 432s user 1955s sys 263s (513.37%)
+
+Number of files: 64
+Parallelization: 64
+real 221s user 2951s sys 3043s (2708.00%)
+Parallelization: 32
+real 218s user 2920s sys 2262s (2374.57%)
+Parallelization: 16
+real 209s user 2577s sys 1076s (1743.47%)
+Parallelization: 8
+real 237s user 2829s sys 757s (1509.82%)
+Parallelization: 4
+real 283s user 2934s sys 563s (1233.29%)
+Parallelization: 2
+real 392s user 2915s sys 424s (850.64%)
+Parallelization: 1
+real 661s user 2583s sys 379s (448.29%)
+
+
+Sample file: /mdata1/ldavis/hs1_base_t42l20s/netcdf/2xdaily_inst_full.d00500-d00600.nc
+Sample script: ./../pressure_spectra.py
+Splitting along: plev
+
+Number of files: 1
+Parallelization: 1
