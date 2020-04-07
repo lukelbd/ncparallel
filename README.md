@@ -51,8 +51,7 @@ The optional arguments are as follows:
 * `-p=NUM`: The maximum number of parallel processes. Defaults to the `-n` argument but can also be smaller.
 
 If you do not want parallel processing and instead just want to
-split up the file into more manageable chunks for your available RAM,
-simply use `-p=1`.
+split up the file into more manageable chunks, simply use `-p=1`.
 As explained above, this is very useful
 when your command execution time is limited by available memory.
 
@@ -86,5 +85,62 @@ The optimal performance for you will depend on your data, your code,
 and your system architecture.
 
 ```sh
+Sample file: ../test.nc
+Sample command: python ./spectra.py
+Splitting along: lat
+
+Number of files: 1
+Parallelization: 1
+real 106s user 78s sys 20s
+
+Number of files: 2
+Parallelization: 2
+real 80s user 90s sys 38s
+Parallelization: 1
+real 143s user 94s sys 41s
+
+Number of files: 4
+Parallelization: 4
+real 53s user 107s sys 31s
+Parallelization: 2
+real 81s user 102s sys 31s
+Parallelization: 1
+real 148s user 109s sys 32s
+
+Number of files: 8
+Parallelization: 8
+real 45s user 147s sys 40s
+Parallelization: 4
+real 61s user 130s sys 35s
+Parallelization: 2
+real 94s user 123s sys 33s
+Parallelization: 1
+real 192s user 137s sys 37s
+
+Number of files: 16
+Parallelization: 16
+real 41s user 232s sys 52s
+Parallelization: 8
+real 53s user 192s sys 47s
+Parallelization: 4
+real 75s user 177s sys 43s
+Parallelization: 2
+real 127s user 164s sys 41s
+Parallelization: 1
+real 251s user 190s sys 48s
+
+Number of files: 32
+Parallelization: 32
+real 42s user 389s sys 78s
+Parallelization: 16
+real 50s user 319s sys 66s
+Parallelization: 8
+real 64s user 270s sys 61s
+Parallelization: 4
+real 106s user 259s sys 56s
+Parallelization: 2
+real 178s user 249s sys 56s
+Parallelization: 1
+real 359s user 282s sys 64s
 ```
 
