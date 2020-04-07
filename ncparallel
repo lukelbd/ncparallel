@@ -66,7 +66,7 @@ done
 cleanup() {
   signal=$?
   [ -n "$keep" ] && $keep && return
-  rm "${outputs_tmp[@]}" "${inputs_tmp[@]}" 2>/dev/null
+  rm "${inputs_tmp[@]}" "${outputs_tmp[@]}" 2>/dev/null
   [ "$signal" -eq 0 ] && rm "${logs[@]}"
 }
 trap cleanup EXIT  # remove files on exit or interruption!
@@ -131,48 +131,48 @@ done
 # Helper function that runs each process
 run() {
   # Arguments are the file index, output file, and input files.
-  local num input_tmp inputs_tmp output_tmp
+  local num input_num inputs_num output_num
   local d1 d2 flag input
   num="$1"
-  output_tmp="$2"
-  inputs_tmp=("${@:3}")
+  output_num="$2"
+  inputs_num=("${@:3}")
   [ $# -ge 3 ] \
     || raise "run() function requires at least 3 input args."
-  [ ${#inputs_tmp[@]} -eq ${#inputs[@]} ] \
-    || raise "Got ${#inputs[@]} input files but ${#inputs_tmp[@]} input files passed to run() function."
+  [ ${#inputs_num[@]} -eq ${#inputs[@]} ] \
+    || raise "Got ${#inputs[@]} input files but ${#inputs_num[@]} input files passed to run() function."
 
   # Divide input file(s)
   d1=$(((num - 1) * ndim / nsplit))  # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
   d2=$((num * ndim / nsplit - 1))  # e.g. nsplit=10, ndim=200, goes 19, 39, 59
-  echo "Copying slab $dimname,$d1,$d2 from ${inputs[*]} into ${inputs_tmp[*]}."
+  echo "Copying slab $dimname,$d1,$d2 from ${inputs[*]} into ${inputs_num[*]}."
   for i in $(seq 1 ${#inputs[@]}); do
     input=${inputs[i-1]}
-    input_tmp=${inputs_tmp[i-1]}
-    # echo "Copying $dimname,$d1,$d2 from ${input} to ${input_tmp}"
+    input_num=${inputs_num[i-1]}
+    # echo "Copying $dimname,$d1,$d2 from ${input} to ${input_num}"
     $fixrec && ncdump -h "$input" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
       && flag="--fix_rec_dmn $dimname"  # required for mppnccombine
     ncks -O -h $debug \
       --bfr_sz 2000000 --no_tmp_fl --hdr_pad 1000 --no_abc $flag \
-      -d "$dimname,$d1,$d2" "$input" "$input_tmp" >&2 \
+      -d "$dimname,$d1,$d2" "$input" "$input_num" >&2 \
       || raise "Failed to split file ${input} with hyperslab $dimname,$d1,$d2."
   done
 
   # Run command
   if $reverse; then
-    echo "Running command: $cmd $output_tmp ${inputs_tmp[*]}"
-    $cmd "$output_tmp" "${inputs_tmp[@]}"
+    echo "Running command: $cmd $output_num ${inputs_num[*]}"
+    $cmd "$output_num" "${inputs_num[@]}"
   else
-    echo "Running command: $cmd ${inputs_tmp[*]} $output_tmp"
-    $cmd "${inputs_tmp[@]}" "$output_tmp"
+    echo "Running command: $cmd ${inputs_num[*]} $output_num"
+    $cmd "${inputs_num[@]}" "$output_num"
   fi
 
   # Add special attributes
-  [ -r "$output_tmp" ] || raise "Failed to generate output file ${output_tmp}."
+  [ -r "$output_num" ] || raise "Failed to generate output file ${output_num}."
   ncatted -O -h \
     -a NumFilesInSet,global,o,l,"$nsplit" \
     -a domain_decomposition,$dimname,o,l,"1,$ndim,$((d1 + 1)),$((d2 + 1))" \
-    "$output_tmp" \
-    || raise "Failed to add nccombine attributes to output file ${output_tmp}."
+    "$output_num" \
+    || raise "Failed to add nccombine attributes to output file ${output_num}."
 }
 
 
@@ -187,18 +187,18 @@ time {
     # Temporary file names
     znum=$(printf "%04d" $((fnum - 1)))
     log=${znum}.log
-    output_tmp=${output%.nc}.${znum}.nc
-    inputs_tmp=("${inputs[@]%.nc}")
-    inputs_tmp=("${inputs_tmp[@]/%/.${znum}.nc}")
+    output_num=${output%.nc}.${znum}.nc
+    inputs_num=("${inputs[@]%.nc}")
+    inputs_num=("${inputs_num[@]/%/.${znum}.nc}")
 
     # Run command in parallel along slice
-    run "$fnum" "$output_tmp" "${inputs_tmp[@]}" &>$log &
+    run "$fnum" "$output_num" "${inputs_num[@]}" &>$log &
 
     # Store process IDs and output files
     pids+=($!)
     logs+=("$log")
-    outputs_tmp+=("$output_tmp")
-    inputs_tmp+=("${inputs_tmp[@]}")
+    inputs_tmp+=("${inputs_num[@]}")
+    outputs_tmp+=("$output_num")
     if [ $pnum -eq $pmax ]; then
       pnum=1
       pwait "$cmd" "${pids[@]}"
