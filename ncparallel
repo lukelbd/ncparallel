@@ -57,11 +57,11 @@ done
 
 # Set up exit trap
 cleanup() {
-  local status=$?
+  signal=$?
   [ -n "$keep" ] && $keep && return
-  rm "${outputs[@]}" "${inputs[@]}" "${logs[@]}" 2>/dev/null
+  rm "${outputs[@]}" "${inputs[@]}" 2>/dev/null
+  [ "$signal" -eq 0 ] && rm "${logs[@]}"
 }
-trap cleanup EXIT
 
 
 # Variables
