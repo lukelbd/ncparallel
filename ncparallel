@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The driver script
-usage="ncparallel [OPTIONS...] [-d=DIM] [-p=NP] [-n=NF] COMMAND INPUT1 [INPUT2 ...] OUTPUT"
+usage="ncparallel [OPTIONS...] [-d=DIM] [-p=NP] [-n=NF] CMD INPUT1 [INPUT2 ...] OUTPUT"
 doc="This script splits up an input NetCDF file into chunks, runs a script
 on some or all of those chunks in parallel, and merges the results into
 an output NetCDF file.
@@ -11,10 +11,10 @@ Usage
 
 Positional arguments
 
-  COMMAND  A command-line command, e.g. './myscript.sh' or a quoted
-           string like 'python file.py'.
-  INPUT    The input NetCDF file name(s).
-  OUTPUT   The output NetCDF file name.
+  CMD     A command-line command, e.g. './myscript.sh' or a quoted string
+          like 'python file.py'.
+  INPUT   The input NetCDF file name(s).
+  OUTPUT  The output NetCDF file name.
 
 Optional arguments
 
