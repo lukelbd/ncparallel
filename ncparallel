@@ -67,7 +67,7 @@ cleanup() {
   signal=$?
   [ -n "$keep" ] && $keep && return
   rm "${inputs_tmp[@]}" "${outputs_tmp[@]}" 2>/dev/null
-  [ "$signal" -eq 0 ] && rm "${logs[@]}"
+  [ "$signal" -eq 0 ] && rm "${logs[@]}" 2>/dev/null
 }
 trap cleanup EXIT  # remove files on exit or interruption!
 
@@ -76,9 +76,6 @@ cmd="${args[0]}"
 args=("${args[@]:1}")
 n=${#args[@]}
 [ $n -ge 2 ] || raise "At least 2 filenames are required, but got $n: ${args[*]}"
-for arg in "${args[@]}"; do
-  [ -r "$arg" ] || raise "File \"$arg\" not found."
-done
 if $reverse; then
   inputs=("${args[@]:1:n-1}")
   output="${args[0]}"
@@ -86,6 +83,9 @@ else
   inputs=("${args[@]::n-1}")
   output="${args[n-1]}"
 fi
+for input in "${inputs[@]}"; do
+  [ -r "$input" ] || raise "Input file \"$input\" not found."
+done
 input="${inputs[0]}"
 
 # Time format and message
