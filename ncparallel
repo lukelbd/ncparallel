@@ -89,10 +89,12 @@ done
 input="${inputs[0]}"
 
 # Time format and message
-if $silent; then
-  export TIMEFORMAT=$''
-else
-  export TIMEFORMAT=$'real %3lR user %3lU sys %3lS'
+if [ -z "${TIMEFORMAT:+set}" ]; then
+  if $silent; then
+    export TIMEFORMAT=''  # set to empty string
+  else
+    export TIMEFORMAT=$'real %3lR user %3lU sys %3lS'  # default format
+  fi
 fi
 $silent || {
   echo "Running command: $cmd"
