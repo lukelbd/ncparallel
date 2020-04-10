@@ -33,16 +33,16 @@ Flags
   -k   If passed, temporary files and log files are not deleted. By default,
        log files are only kept if a process failed.
   -s   If passed, messages are silenced.
+  -d   If passed, extra debug messages are printed.
 "
 # Get arguments
-# debug='-D 2'
-debug=''
-nsplit=8
+debug=false
 dimname=lat # can also split along time dimension?
+fixrec=false
 keep=false
+nsplit=8
 reverse=false
 silent=false
-fixrec=false
 dir=${0%/*}
 source $dir/header.sh
 while [ $# -ne 0 ]; do
@@ -55,11 +55,13 @@ while [ $# -ne 0 ]; do
     -k) keep=true ;;
     -r) reverse=true ;;
     -s) silent=true ;;
+    -d) debug=true ;;
     -*) raise "Unknown argument ${1}." ;;
     *) args+=("$1") ;;
   esac
   shift
 done
+$debug && flag_ncks='-D 2'
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
 
 # Set up exit trap
@@ -90,16 +92,13 @@ input="${inputs[0]}"
 
 # Time format and message
 if [ -z "${TIMEFORMAT:+set}" ]; then
-  if $silent; then
-    export TIMEFORMAT=''  # set to empty string
-  else
-    export TIMEFORMAT=$'real %3lR user %3lU sys %3lS'  # default format
-  fi
+  export TIMEFORMAT=$'real %3lR user %3lU sys %3lS'  # default format
+  $silent && export TIMEFORMAT=''  # set to empty string
 fi
-$silent || {
-  echo "Running command: $cmd"
-  # echo "Input file(s): ${inputs[*]}"
-  # echo "Output file: $output"
+$silent || echo "Running command: $cmd"
+$debug && {
+  echo "Input file(s): ${inputs[*]}"
+  echo "Output file: $output"
 }
 
 # Special case
@@ -138,7 +137,7 @@ done
 run() {
   # Arguments are the file index, output file, and input files.
   local num output_num input_num inputs_num
-  local d1 d2 flag input args
+  local d1 d2 iflag_ncks input args
   num="$1"
   output_num="$2"
   inputs_num=("${@:3}")
@@ -151,18 +150,20 @@ run() {
   d1=$(((num - 1) * ndim / nsplit))  # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
   d2=$((num * ndim / nsplit - 1))  # e.g. nsplit=10, ndim=200, goes 19, 39, 59
   echo "Copying slab $dimname,$d1,$d2 from ${inputs[*]} into ${inputs_num[*]}."
-  for i in $(seq 1 ${#inputs[@]}); do
-    input=${inputs[i-1]}
-    input_num=${inputs_num[i-1]}
-    # echo "Copying $dimname,$d1,$d2 from ${input} to ${input_num}"
-    $fixrec && ncdump -h "$input" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
-      && flag="--fix_rec_dmn $dimname"  # required for mppnccombine
-    ncks -O -h $debug \
-      --no_tmp_fl --hdr_pad 1000 --no_abc $flag \
-      -d "$dimname,$d1,$d2" "$input" "$input_num" >&2 \
-      || raise "Failed to split file ${input} with hyperslab $dimname,$d1,$d2."
-      # --bfr_sz 2097152 \
-  done
+  time {
+    for i in $(seq 1 ${#inputs[@]}); do
+      input=${inputs[i-1]}
+      input_num=${inputs_num[i-1]}
+      # echo "Copying $dimname,$d1,$d2 from ${input} to ${input_num}"
+      $fixrec && ncdump -h "$input" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
+        && iflag_ncks="--fix_rec_dmn $dimname"  # required for mppnccombine
+      ncks -O -h $flag_ncks $iflag_ncks \
+        --no_tmp_fl --hdr_pad 1000 --no_abc \
+        -d "$dimname,$d1,$d2" "$input" "$input_num" >&2 \
+        || raise "Failed to split file ${input} with hyperslab $dimname,$d1,$d2."
+        # --bfr_sz 2097152 \
+    done
+  }
 
   # Run command
   if $reverse; then
@@ -171,15 +172,15 @@ run() {
     args=("${inputs_num[@]}" "$output_num" )
   fi
   echo "Running command: $cmd ${args[*]}"
-  $cmd "${args[@]}" || raise "Command failed: $cmd ${args[*]}"
-  [ -r "$output_num" ] || raise "Command failed to generate output file ${output_num}."
-
-  # Add special attributes
-  ncatted -O -h \
-    -a NumFilesInSet,global,o,l,"$nsplit" \
-    -a domain_decomposition,$dimname,o,l,"1,$ndim,$((d1 + 1)),$((d2 + 1))" \
-    "$output_num" \
-    || raise "Failed to add nccombine attributes to output file ${output_num}."
+  time {
+    $cmd "${args[@]}" || raise "Command failed: $cmd ${args[*]}"
+    [ -r "$output_num" ] || raise "Command failed to generate output file ${output_num}."
+    ncatted -O -h \
+      -a NumFilesInSet,global,o,l,"$nsplit" \
+      -a domain_decomposition,$dimname,o,l,"1,$ndim,$((d1 + 1)),$((d2 + 1))" \
+      "$output_num" >&2 \
+      || raise "Failed to add nccombine attributes to output file ${output_num}."
+  }
 }
 
 # Generate background processes for each file, for example a python script
