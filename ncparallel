@@ -91,10 +91,8 @@ done
 input="${inputs[0]}"
 
 # Time format and message
-if [ -z "${TIMEFORMAT:+set}" ]; then
-  export TIMEFORMAT=$'real %3lR user %3lU sys %3lS'  # default format
-  $silent && export TIMEFORMAT=''  # set to empty string
-fi
+export TIMEFORMAT=$'real %3R user %3U sys %3S'  # default format in seconds
+$silent && export TIMEFORMAT=''  # set to empty string
 $silent || echo "Running command: $cmd"
 $debug && {
   echo "Input file(s): ${inputs[*]}"
@@ -133,6 +131,8 @@ done
 #-----------------------------------------------------------------------------#
 # Perform ncdivide inline
 #-----------------------------------------------------------------------------#
+# Divide files one by one
+
 # Helper function that runs each process
 run() {
   # Arguments are the file index, output file, and input files.
@@ -154,7 +154,6 @@ run() {
     for i in $(seq 1 ${#inputs[@]}); do
       input=${inputs[i-1]}
       input_num=${inputs_num[i-1]}
-      # echo "Copying $dimname,$d1,$d2 from ${input} to ${input_num}"
       $fixrec && ncdump -h "$input" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
         && iflag_ncks="--fix_rec_dmn $dimname"  # required for mppnccombine
       ncks -O -h $flag_ncks $iflag_ncks \
@@ -198,7 +197,8 @@ time {
     inputs_num=("${inputs_num[@]/%/.${znum}.nc}")
 
     # Run command in parallel along slice
-    run "$fnum" "$output_num" "${inputs_num[@]}" &>$log &
+    # split "$fnum" "${inputs_num[@]}" &>$log &
+    run "$fnum" "$output_num" "${inputs_num[@]}" &>>$log &
 
     # Store process IDs and output files
     pids+=($!)
@@ -214,6 +214,23 @@ time {
     fi
   done
   pwait "$cmd" "${pids[@]}"
+}
+
+# Message showing average time for each process
+avgtime() {
+  cat "${logs[@]}" | awk "
+    c && ! --c
+    /${1}/ {c=1}
+  " | awk '{print $2" "$4" "$6}' | tr -d s | awk '
+    {real += $1; user += $2; sys += $3}
+    END {print "user " real / NR "s user " user / NR "s sys " sys / NR "s"}
+  '
+}
+$debug && {
+  echo "Average split time"
+  avgtime '^Copying slab'
+  echo "Average command time"
+  avgtime '^Running command'
 }
 
 # Finally combine, and remove the temporary files
