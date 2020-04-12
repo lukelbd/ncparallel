@@ -12,7 +12,8 @@ Usage
 Positional arguments
 
   CMD     A command-line command, e.g. './myscript.sh' or a quoted string
-          like 'python file.py'.
+          like 'python file.py'. The command should accept input file name(s)
+          followed by an output file name as command-line arguments.
   INPUT   The input NetCDF file name(s).
   OUTPUT  The output NetCDF file name.
 
@@ -26,14 +27,15 @@ Optional arguments
 Flags
 
   -h   Print this message.
-  -r   If passed, the OUTPUT file name comes before the INPUT file name(s)
-       when calling this function and when passing arugments to COMMAND.
-  -f   If passed and -d is a record (i.e. unlimited) dimension, the dimension
-       has fixed length in the OUTPUT file.
-  -k   If passed, temporary files and log files are not deleted. By default,
-       log files are only kept if a process failed.
-  -s   If passed, silent mode is enabled and all messages are suppressed.
-  -v   If passed, verbose mode is enabled and extra messages are printed.
+  -r   Reverse the order of OUTPUT and INPUT. The ncparallel call signature is
+       now 'ncparallel CMD OUTPUT INPUT1 [INPUT2 ...]' and CMD should accept an
+       output file name followed by input file name(s).
+  -f   Fix the record (i.e. 'unlimited') dimension in the OUTPUT file
+       and use mppnccombine rather than ncrcat if -d is a record dimension.
+  -k   Keep all temporary files and log files. By default, log files are only
+       kept if a process failed.
+  -s   Enable silent mode and suppress all messages.
+  -v   Enable verbose mode and print extra messages.
 "
 # Get arguments
 verbose=false
