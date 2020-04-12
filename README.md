@@ -71,6 +71,8 @@ The flags are as follows:
 
 # Performance
 
+## Intensive computation
+
 Seeing is believing. The below shows performance metrics for longitude-time Randel
 and Held (1991) spectral decompositions of a 400MB file with 64 latitudes
 on a high-performance server with 32 cores and 32GB of RAM.
@@ -134,3 +136,63 @@ Parallelization: 2
 real 178s user 249s sys 56s
 ```
 
+## Straightforward computation
+
+The below shows performance metrics for a simpler script that calculates
+eddy meridional heat and momentum flux for the same data.
+This time the optimal performance was achieved for only 4 chunks processed in
+parallel. While `ncparallel` was able to improve performance, the improvement
+was marginal, and splitting the file into
+a very many chunks resulted in worse performance than if chunking was
+not performed at all. This emphasizes that `ncparallel` should be used
+only with careful consideration of the task at hand.
+
+```sh
+Sample file: ../test.nc
+Sample command: python ./fluxes.py
+Splitting along: lat
+
+Number of files: 1
+Parallelization: 1
+real 25s user 12s sys 12s
+
+Number of files: 2
+Parallelization: 2
+real 20s user 18s sys 16s
+
+Number of files: 4
+Parallelization: 4
+real 17s user 26s sys 17s
+Parallelization: 2
+real 23s user 25s sys 13s
+
+Number of files: 8
+Parallelization: 8
+real 22s user 41s sys 21s
+Parallelization: 4
+real 24s user 35s sys 15s
+Parallelization: 2
+real 32s user 33s sys 14s
+
+Number of files: 16
+Parallelization: 16
+real 34s user 71s sys 35s
+Parallelization: 8
+real 36s user 58s sys 23s
+Parallelization: 4
+real 39s user 53s sys 20s
+Parallelization: 2
+real 51s user 52s sys 19s
+
+Number of files: 32
+Parallelization: 32
+real 60s user 129s sys 54s
+Parallelization: 16
+real 61s user 114s sys 42s
+Parallelization: 8
+real 65s user 95s sys 33s
+Parallelization: 4
+real 74s user 94s sys 30s
+Parallelization: 2
+real 90s user 94s sys 29s
+```
