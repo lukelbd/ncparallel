@@ -301,21 +301,21 @@ int main(int argc, char *argv[])
       else if (!strcmp(argv[a],"-64"))
         format=(NC_NOCLOBBER | NC_64BIT_OFFSET);
       else if (!strcmp(argv[a], "-n4"))
-	format=(NC_NOCLOBBER | NC_NETCDF4 | NC_CLASSIC_MODEL);
+   format=(NC_NOCLOBBER | NC_NETCDF4 | NC_CLASSIC_MODEL);
       else if (!strcmp(argv[a],"-m")) missing=1;
       else if (!strcmp(argv[a], "-d"))
-	{
-	  a++;
-	  if ( a < argc) 
-	    {
-	      deflate = 1;
-	      deflation = atoi(argv[a]);
-	    }
-	  else
-	    {
-	      usage(); return(1);
-	    }
-	}
+   {
+     a++;
+     if ( a < argc) 
+       {
+         deflate = 1;
+         deflation = atoi(argv[a]);
+       }
+     else
+       {
+         usage(); return(1);
+       }
+   }
       else if (!strcmp(argv[a],"-s")) shuffle=1;
       else
         {
@@ -346,35 +346,35 @@ int main(int argc, char *argv[])
    ncopts=0;
 
    if (!mem_dry_run) {
-	   /* Create a new netCDF output file */
-	   if ((ncoutfile=(struct fileinfo *)malloc(sizeof(struct fileinfo)))==NULL)
-	     {
-	      fprintf(stderr,"Error: cannot allocate enough memory!\n"); return(1);
-	     }
-	   if (!appendnc)
-	     {
-	      if (stat(outfilename,&statbuf)==0)
-		{
-		 fprintf(stderr,"Error: output file seems to exist already!\n");
-		 free(ncoutfile); return(1);
-		}
-	      status = nc__create(outfilename, format, 0, &blksz, &ncoutfile->ncfid);
-	      if (status==(-1))
-		{
-		 fprintf(stderr,"Error: cannot create the output netCDF file!\n");
-		 free(ncoutfile); return(1);
-		}
-	      ncsetfill(ncoutfile->ncfid,NC_NOFILL);
-	     }
-	   /* Open an existing netCDF file for appending */
-	   else
-	     {
-	      if ((ncoutfile->ncfid=ncopen(outfilename,NC_WRITE))==(-1))
-		{
-		 fprintf(stderr,"Error: cannot open the output netCDF file for appending!\n");
-		 free(ncoutfile); return(1);
-		}
-	     }
+      /* Create a new netCDF output file */
+      if ((ncoutfile=(struct fileinfo *)malloc(sizeof(struct fileinfo)))==NULL)
+        {
+         fprintf(stderr,"Error: cannot allocate enough memory!\n"); return(1);
+        }
+      if (!appendnc)
+        {
+         if (stat(outfilename,&statbuf)==0)
+      {
+       fprintf(stderr,"Error: output file seems to exist already!\n");
+       free(ncoutfile); return(1);
+      }
+         status = nc__create(outfilename, format, 0, &blksz, &ncoutfile->ncfid);
+         if (status==(-1))
+      {
+       fprintf(stderr,"Error: cannot create the output netCDF file!\n");
+       free(ncoutfile); return(1);
+      }
+         ncsetfill(ncoutfile->ncfid,NC_NOFILL);
+        }
+      /* Open an existing netCDF file for appending */
+      else
+        {
+         if ((ncoutfile->ncfid=ncopen(outfilename,NC_WRITE))==(-1))
+      {
+       fprintf(stderr,"Error: cannot open the output netCDF file for appending!\n");
+       free(ncoutfile); return(1);
+      }
+        }
    }
 
    /* No input files are specified on the command-line */
@@ -388,27 +388,27 @@ int main(int argc, char *argv[])
            f=0; 
            for (a=nstart; a <= nend; a++)
              {
-	       if (peWidth<0)
-		 {
-		   sprintf(infilename,"%s.%04d",outfilename,a);
-		   if (stat(infilename,&statbuf)==0)
-		     {
-		       peWidth=4;
-		     }
-		   else
-		     {
-		       sprintf(infilename,"%s.%06d",outfilename,a);
-		       if (stat(infilename,&statbuf)==0)
-			 {
-			   peWidth=6;
-			 }
-		       else
-			 {
-			   continue;
-			 }
-		     }
-		 }
-	       sprintf(infilename,"%s.%0*d",outfilename,peWidth,a);
+          if (peWidth<0)
+       {
+         sprintf(infilename,"%s.%04d",outfilename,a);
+         if (stat(infilename,&statbuf)==0)
+           {
+             peWidth=4;
+           }
+         else
+           {
+             sprintf(infilename,"%s.%06d",outfilename,a);
+             if (stat(infilename,&statbuf)==0)
+          {
+            peWidth=6;
+          }
+             else
+          {
+            continue;
+          }
+           }
+       }
+          sprintf(infilename,"%s.%0*d",outfilename,peWidth,a);
                if (stat(infilename,&statbuf)!=0){
                 if (force==0) {
                   printf("ERROR: missing at least %s from the input fileset.  Exiting.\n", infilename);
@@ -467,27 +467,27 @@ int main(int argc, char *argv[])
             f=0;
             for (a=nstart; a < nend; a++)
               {
-	       if (peWidth<0)
-		 {
-		   sprintf(infilename,"%s.%04d",outfilename,a);
-		   if (stat(infilename,&statbuf)==0)
-		     {
-		       peWidth=4;
-		     }
-		   else
-		     {
-		       sprintf(infilename,"%s.%06d",outfilename,a);
-		       if (stat(infilename,&statbuf)==0)
-			 {
-			   peWidth=6;
-			 }
-		       else
-			 {
-			   continue;
-			 }
-		     }
-		 }
-	       sprintf(infilename,"%s.%0*d",outfilename,peWidth,a);
+          if (peWidth<0)
+       {
+         sprintf(infilename,"%s.%04d",outfilename,a);
+         if (stat(infilename,&statbuf)==0)
+           {
+             peWidth=4;
+           }
+         else
+           {
+             sprintf(infilename,"%s.%06d",outfilename,a);
+             if (stat(infilename,&statbuf)==0)
+          {
+            peWidth=6;
+          }
+             else
+          {
+            continue;
+          }
+           }
+       }
+          sprintf(infilename,"%s.%0*d",outfilename,peWidth,a);
                if (stat(infilename,&statbuf)!=0){
                  if (force==0) {
                    printf("ERROR: missing at least %s from the input fileset.  Exiting.\n", infilename);
@@ -599,27 +599,27 @@ int main(int argc, char *argv[])
                // occasionally nfiles may be wrongly set to zero,
                // and yet the user wants to remove the input files in a range.
                //if (++f > nfiles) break;
-	       if (peWidth<0)
-		 {
-		   sprintf(infilename,"%s.%04d",outfilename,a);
-		   if (stat(infilename,&statbuf)==0)
-		     {
-		       peWidth=4;
-		     }
-		   else
-		     {
-		       sprintf(infilename,"%s.%06d",outfilename,a);
-		       if (stat(infilename,&statbuf)==0)
-			 {
-			   peWidth=6;
-			 }
-		       else
-			 {
-			   continue;
-			 }
-		     }
-		 }
-	       sprintf(infilename,"%s.%0*d",outfilename,peWidth,a);
+          if (peWidth<0)
+       {
+         sprintf(infilename,"%s.%04d",outfilename,a);
+         if (stat(infilename,&statbuf)==0)
+           {
+             peWidth=4;
+           }
+         else
+           {
+             sprintf(infilename,"%s.%06d",outfilename,a);
+             if (stat(infilename,&statbuf)==0)
+          {
+            peWidth=6;
+          }
+             else
+          {
+            continue;
+          }
+           }
+       }
+          sprintf(infilename,"%s.%0*d",outfilename,peWidth,a);
                if (stat(infilename,&statbuf)!=0) continue;
                if (verbose) printf("Removing \"%s\"\n",infilename);
                unlink(infilename);
@@ -911,16 +911,16 @@ int process_file(char *ncname, unsigned char appendnc,
         }
 
       if (deflate==1 && deflation>0)
-	{
-	  for (v=0; v < ncinfile->nvars; v++)
-	    {
-	      if ( nc_def_var_deflate(ncoutfile->ncfid,v,shuffle,deflate,deflation) != NC_NOERR ) 
-		{
-		  fprintf(stderr,"Error: nc_def_var_deflate failed! Are you setting NETCDF4?\n");
-		  usage();
-		}
-	    }
-	}
+   {
+     for (v=0; v < ncinfile->nvars; v++)
+       {
+         if ( nc_def_var_deflate(ncoutfile->ncfid,v,shuffle,deflate,deflation) != NC_NOERR ) 
+      {
+        fprintf(stderr,"Error: nc_def_var_deflate failed! Are you setting NETCDF4?\n");
+        usage();
+      }
+       }
+   }
 
 
       /* Definitions done */
