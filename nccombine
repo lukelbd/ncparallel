@@ -15,44 +15,44 @@ while [ $# -ne 0 ]; do
   case $1 in
     -h) echo "$doc" >&2 && exit 0 ;;
     -*) raise "Unknown flag ${1}." ;;
-    *)  [ -z "$filename" ] && filename="$1" || files+=("$1") ;;
+    *)  [ -z "$output" ] && output="$1" || inputs+=("$1") ;;
   esac
   shift
 done
-[ ${#files[@]} -eq 0 ] && raise "No input files found."
-[[ "$filename" =~ .nc$ ]] || raise "File $filename does not end in '.nc' extension." # output file
+[ ${#inputs[@]} -eq 0 ] && raise "No input inputs found."
+[[ "$output" =~ .nc$ ]] || raise "File $output does not end in '.nc' extension." # output file
 
 # Get the concatenation dimension by inspecting attributes
-for file in "${files[@]}"; do
-  iname=$(ncdump -h "${files[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
-  if [ -z "$iname" ]; then
-    raise "File $file does not have dimension with domain_decomposition attribute. Perhaps your script deleted it!"
-  elif [ -n "$dimname" ] && [ "$dimname" != "$iname" ]; then
-    raise "File $file has different domain_decomposition dimension, ${iname}, from dimension from previous file, ${dimname}."
+for input in "${inputs[@]}"; do
+  idimname=$(ncdump -h "${inputs[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
+  if [ -z "$idimname" ]; then
+    raise "File $input does not have dimension with domain_decomposition attribute. Perhaps your script deleted it!"
+  elif [ -n "$dimname" ] && [ "$dimname" != "$idimname" ]; then
+    raise "File $input has different domain_decomposition dimension, ${idimname}, from dimension from previous file, ${dimname}."
   fi
-  dimname=$iname
+  dimname=$idimname
 done
 
 # Test whether concatenation dimension is unlimited
-ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
+ncdump -h "${inputs[0]}" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
   && unlimited=true || unlimited=false
 
-# Combine files in one of two ways
+# Combine inputs in one of two ways
 # Found out that mppnccombine is *slower* than ncrcat! So if possible, always
 # use ncrcat and do not fix unlimited dimensions!
 # ./mppncdivide -f -d=time test.nc; rm tmp.nc; time ${dir}/mppnccombine.x tmp.nc test.*.nc
 # ./mppncdivide -d=time test.nc; rm tmp.nc; time ncrcat -O test.*.nc tmp.nc
-rm "$filename" 2>/dev/null
+rm "$output" 2>/dev/null
 if $unlimited; then
   which ncrcat &>/dev/null \
     || raise "ncrcat not found. Please install the NetCDF Operators (NCO) or use the '-f' flag."
-  ncrcat -O -h "${files[@]}" "$filename" \
+  ncrcat -O -h "${inputs[@]}" "$output" \
     || raise "ncrcat failed."
 # Combine with mppnccombine
 else
   [ -x ${dir}/mppnccombine.x ] \
     || raise "${dir}/mppnccombine.x executable not found. Please edit ${dir}/Makefile for your system, then generate mppnccombine.x by typing 'make' in the terminal."
-  ${dir}/mppnccombine.x "$filename" "${files[@]}" \
+  ${dir}/mppnccombine.x "$output" "${inputs[@]}" \
     || raise "mppnccombine.x failed."
 fi
 exit 0

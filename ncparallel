@@ -50,9 +50,9 @@ source $dir/header.sh
 while [ $# -ne 0 ]; do
   case "$1" in
     -h) echo "$doc" >&2 && exit 0 ;;
-    -n=*) nsplit="${1#*=}" ;;
-    -d=*) dimname="${1#*=}" ;;
-    -p=*) pmax="${1#*=}" ;;
+    -n=*) nsplit=${1#*=} ;;
+    -d=*) dimname=${1#*=} ;;
+    -p=*) pmax=${1#*=} ;;
     -f) fixrec=true ;;
     -k) keep=true ;;
     -r) reverse=true ;;
