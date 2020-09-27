@@ -1,23 +1,35 @@
-# What
-This repository introduces the shell command `ncparallel` for
-running arbitrary commands on NetCDF files in parallel by
-dividing and combining files along arbitrary dimensions.
-We use the GFDL Flexible Modelling System `mppnccombine.c` tool for combining datasets along non-record dimensions
-(also see the [`mppnccombine-fast.c`](https://github.com/coecms/mppnccombine-fast)
-tool developed for the Modular Ocean Modelling system).
+What
+----
 
-# Why
-Using this tool won't always result in a speedup. For relatively fast
-commands, the overhead of creating a bunch of temporary NetCDF
-files can exceed the original command execution time.
+This repository introduces the shell command `ncparallel` for running arbitrary commands
+on NetCDF files in parallel by dividing and combining files along arbitrary dimensions.
+We use the GFDL Flexible Modelling System `mppnccombine.c` tool for combining datasets
+along non-record dimensions (also see the
+[`mppnccombine-fast.c`](https://github.com/coecms/mppnccombine-fast) tool developed for
+the Modular Ocean Modelling system).
+
+Why
+---
+
+Using this tool won't always result in a speedup. For relatively fast commands, the
+overhead of creating a bunch of temporary NetCDF files can exceed the original command
+execution time.
 
 However, this tool is exceedingly useful in two situations:
 
-1. For very slow, laborious processes, the parallelization will result in a very obvious speedup.
-2. For very large files, e.g. file sizes approaching or greater than the available RAM, your computer may run out of memory and have to use the hard disk for "virtual" RAM. This significantly slows down the process and can grind hard disk access to a crawl, getting in the way of other processes. With this tool, you can use the `-p` and `-n` flags to serially process the file in chunks, eliminating the memory bottleneck.
+1. For very slow, laborious processes, the parallelization will result in a
+   very obvious speedup.
+2. For very large files, e.g. file sizes approaching or greater than the available RAM,
+   your computer may run out of memory and have to use the hard disk for "virtual" RAM.
+   This significantly slows down the process and can grind hard disk access to a crawl,
+   getting in the way of other processes. With this tool, you can use the `-p` and `-n`
+   flags to serially process the file in chunks, eliminating the memory bottleneck.
+
 <!-- This is great where your computation bottleneck is RAM due to large file sizes. -->
 
-# Installation
+Installation
+------------
+
 Download this repository with
 ```bash
 cd $HOME && git clone https://github.com/lukelbd/ncparallel
@@ -29,31 +41,42 @@ export PATH="$HOME/ncparallel:$PATH"
 to your shell configuration file, usually named `$HOME/.bashrc` or `$HOME/.bash_profile`. If the file
 does not exist, you can create it, and its contents should be run every time you open up a terminal.
 
-# Usage
+Usage
+-----
+
 Example usage is as follows:
 ```bash
 ncparallel -d=lat -p=8 -n=32 command input1.nc [input2.nc ... inputN.nc] output.nc
 ```
-The first positional argument is the command written as you would type it into the command line -- for example, `./script.sh`, `'python script.py'`, or `'ncap2 -s "math-goes-here"'`. Note that the command must be surrounded by quotes if it consists of more than one word.
-The final positional arguments are the input file name(s) and the output file name.
-<!-- The command must accept two positional arguments: An input file name, and an output file name. -->
+The first positional argument is the command written as you would type it into the
+command line -- for example, `./script.sh`, `'python script.py'`, or
+`'ncap2 -s "math-goes-here"'`. Note that the command must be surrounded by quotes
+if it consists of more than one word. The final positional arguments are the input file
+name(s) and the output file name.
+<!-- The command must accept two positional arguments: An input file name, and an output
+file name. -->
 
-For input file(s) named `input1.nc`, `input2.nc`, etc. and an output file named `output.nc`, parallel processing is achieved as follows:
+For input file(s) named `input1.nc`, `input2.nc`, etc. and an output file named
+`output.nc`, parallel processing is achieved as follows:
 
-1. Each input file `inputN.nc` is split up along some dimension into chunks, in this case named `inputN.0000.nc`, `inputN.0001.nc`, etc.
-2. The input command is called on the file chunks serially or in parallel (depending on the value passed to `-p`), in this case with  `command input1.0000.nc [input2.0000.nc ... inputN.0000.nc] output.0000.nc`, etc.
-3. The resulting output files are combined along the same dimension into the requested output file name, in this case `output.nc`.
+1. Each input file `inputN.nc` is split up along some dimension into chunks, in this
+   case named `inputN.0000.nc`, `inputN.0001.nc`, etc.
+2. The input command is called on the file chunks serially or in parallel (depending on
+   the value passed to `-p`), in this case with
+   `command input1.0000.nc [input2.0000.nc ... inputN.0000.nc] output.0000.nc`, etc.
+3. The resulting output files are combined along the same dimension into the requested
+   output file name, in this case `output.nc`.
 
 The optional arguments are as follows:
 
 * `-d=NAME`: The dimension name along which we split the file. Defaults to `lat`.
 * `-n=NUM`: The number of file chunks to generate. Defaults to `8`.
-* `-p=NUM`: The maximum number of parallel processes. Defaults to the `-n` argument but can also be smaller.
+* `-p=NUM`: The maximum number of parallel processes. Defaults to the `-n` argument but
+  can also be smaller.
 
-If you do not want parallel processing and instead just want to
-split up the file into more manageable chunks, simply use `-p=1`.
-As explained above, this is very useful
-when your command execution time is limited by available memory.
+If you do not want parallel processing and instead just want to split up the file into
+more manageable chunks, simply use `-p=1`. As explained above, this is very useful when
+your command execution time is limited by available memory.
 
 The flags are as follows:
 
@@ -73,18 +96,20 @@ The flags are as follows:
 
 ## Intensive computation
 
-Seeing is believing. The below shows performance metrics for longitude-time Randel
-and Held (1991) spectral decompositions of a 400MB file with 64 latitudes
-on a high-performance server with 32 cores and 32GB of RAM.
+Seeing is believing. Below are performance metrics for longitude-time
+[Randel and Held (1991)](https://journals.ametsoc.org/jas/article/48/5/688/22876/Phase-Speed-Spectra-of-Transient-Eddy-Fluxes-and)
+spectral decompositions of a 400MB file with 64 latitudes on a
+high-performance server with 32 cores and 32GB of RAM.
 
-This task is very computationally intensive, and the server is well-suited for
-parallelization, so `ncparallel` delivers an obvious speedup. In this case,
-the optimal performance was reached by splitting up the file into 16
-latitude chunks and running the 16 processes in parallel. Restricting the number
-of parallel processes never resulted in a speedup because the process was not
-limited by available memory, and splitting up the file into more chunks produced
-diminishing returns.  The optimal performance for you will depend on your data,
-your code, and your system architecture.
+Since the task is computationally intensive and the server is well-suited for
+parallelization, `ncparallel` provides an obvious speedup. In this case, the optimal
+performance was reached with 16 latitude chunks and 16 parallel processes. Restricting
+the number of parallel processes did not improve performance because the process was not
+limited by available memory, and increasing the number of chunks yielded diminishing
+performance returns.
+
+The optimal performance for you will depend on your data, your code, and your system
+architecture.
 
 ```sh
 Sample file: ../test.nc
@@ -138,14 +163,16 @@ real 178s user 249s sys 56s
 
 ## Straightforward computation
 
-The below shows performance metrics for a simpler script that calculates
-eddy meridional heat and momentum flux for the same data.
-This time the optimal performance was achieved for only 4 chunks processed in
-parallel. While `ncparallel` was able to improve performance, the improvement
-was marginal, and splitting the file into
-a very many chunks resulted in worse performance than if chunking was
-not performed at all. This emphasizes that `ncparallel` should be used
-only with careful consideration of the task at hand.
+Below are performance metrics for a simpler script that calculates eddy fluxes of heat
+and angular momentum for the same dataset.
+
+This time, the optimal performance was reached with only 4 latitude chunks. While
+`ncparallel` did improve performance, the improvement was much more marginal, and
+increasing the number of chunks yielded even worse performance than the performance
+without `ncparallel`.
+
+This emphasizes that `ncparallel` should be used only with careful consideration of the
+task at hand.
 
 ```sh
 Sample file: ../test.nc
