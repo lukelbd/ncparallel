@@ -1,51 +1,58 @@
 #!/usr/bin/env bash
-################################################################################
-# Function that expands functionality of mppnccombine, to also
-# work for files split along an *unlimited* dimension e.g. 'time'
-################################################################################
+usage="nccombine OUTFILE FILE1 [FILE2 FILE3...]"
+doc="This script merges a NetCDF file along an arbitrary dimension using
+'mppnccombine', or along the time or record dimension using 'ncrcat'.
+
+Usage
+
+  $usage
+"
 # Parse args
-! which ncks &>/dev/null && raise "ncks not found, mppncdivide requires the NetCDF Operators (NCO) tools."
+which ncks &>/dev/null || raise "ncks not found. mppncdivide requires the NetCDF Operators (NCO) tools."
 dir=${0%/*}
 source $dir/header.sh
 while [ $# -ne 0 ]; do
   case $1 in
+    -h) echo "$doc" >&2 && exit 0 ;;
     -*) raise "Unknown flag ${1}." ;;
-    *)  [ -z "$filename" ] && filename="$1" || files+=("$1") ;;
+    *)  [ -z "$output" ] && output="$1" || inputs+=("$1") ;;
   esac
   shift
 done
-[ -z "$files" ] && raise "No input files found."
-! [[ "$filename" =~ .nc$ ]] && raise "File $filename does not end in '.nc' extension." # output file
-# Get the concatenation dimension
-for file in "${files[@]}"; do
-  iname=$(ncdump -h "${files[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
-  if [ -z "$iname" ]; then
-    raise "File $file does not have dimension with domain_decomposition attribute. Perhaps your script deleted it!"
-  elif [ -n "$dname" ] && [ "$dname" != "$iname" ]; then
-    raise "File $file has different domain_decomposition dimension, ${iname}, from dimension from previous file, ${dname}."
-  fi
-  dname=$iname
-done
-# Test whether concatenation dimension is unlimited
-ncdump -h "${files[0]}" | grep 'UNLIMITED' | grep $dname &>/dev/null
-[ $? -eq 0 ] && unlimited=true || unlimited=false
+[ ${#inputs[@]} -eq 0 ] && raise "No input inputs found."
+[[ "$output" =~ .nc$ ]] || raise "File $output does not end in '.nc' extension." # output file
 
-# Combine files in one of two ways
+# Get the concatenation dimension by inspecting attributes
+for input in "${inputs[@]}"; do
+  idimname=$(ncdump -h "${inputs[0]}" | grep domain_decomposition | cut -d: -f1 | xargs)
+  if [ -z "$idimname" ]; then
+    raise "File $input does not have dimension with domain_decomposition attribute. Perhaps your script deleted it!"
+  elif [ -n "$dimname" ] && [ "$dimname" != "$idimname" ]; then
+    raise "File $input has different domain_decomposition dimension, ${idimname}, from dimension from previous file, ${dimname}."
+  fi
+  dimname=$idimname
+done
+
+# Test whether concatenation dimension is unlimited
+ncdump -h "${inputs[0]}" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
+  && unlimited=true || unlimited=false
+
+# Combine inputs in one of two ways
 # Found out that mppnccombine is *slower* than ncrcat! So if possible, always
 # use ncrcat and do not fix unlimited dimensions!
-# ./mppncdivide -f -d=time test.nc; rm tmp.nc; time ./mppnccombine.x tmp.nc test.*.nc
+# ./mppncdivide -f -d=time test.nc; rm tmp.nc; time ${dir}/mppnccombine.x tmp.nc test.*.nc
 # ./mppncdivide -d=time test.nc; rm tmp.nc; time ncrcat -O test.*.nc tmp.nc
-rm "$filename" 2>/dev/null
+rm "$output" 2>/dev/null
 if $unlimited; then
-  ! which ncrcat &>/dev/null && \
-    raise "ncrcat not found, mppnccombine requires the NetCDF Operators (NCO) tools."
-  ncrcat -O -h "${files[@]}" "$filename"
-  [ $? -ne 0 ] && raise "ncrcat failed."
+  which ncrcat &>/dev/null \
+    || raise "ncrcat not found. Please install the NetCDF Operators (NCO) or use the '-f' flag."
+  ncrcat -O -h "${inputs[@]}" "$output" \
+    || raise "ncrcat failed."
 # Combine with mppnccombine
 else
-  ! which ./mppnccombine.x &>/dev/null && \
-    raise "./mppnccombine.x executable not found. You must compile mppnccombine.c with the make.sh script."
-  ./mppnccombine.x "$filename" "${files[@]}"
-  [ $? -ne 0 ] && raise "mppnccombine.x failed."
+  [ -x ${dir}/mppnccombine.x ] \
+    || raise "${dir}/mppnccombine.x executable not found. Please edit ${dir}/Makefile for your system, then generate mppnccombine.x by typing 'make' in the terminal."
+  ${dir}/mppnccombine.x "$output" "${inputs[@]}" \
+    || raise "mppnccombine.x failed."
 fi
 exit 0

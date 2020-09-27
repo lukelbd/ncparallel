@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The driver script
-usage="ncparallel [OPTIONS...] [-d=DIMNAME] [-p=NP] [-n=NF] COMMAND INPUT OUTPUT"
+usage="ncparallel [OPTIONS...] [-d=DIM] [-p=NP] [-n=NF] CMD INPUT1 [INPUT2 ...] OUTPUT"
 doc="This script splits up an input NetCDF file into chunks, runs a script
 on some or all of those chunks in parallel, and merges the results into
 an output NetCDF file.
@@ -11,114 +11,235 @@ Usage
 
 Positional arguments
 
-  COMMAND  A command-line command, e.g. './myscript.sh' or a quoted
-           string like 'python file.py'.
-  INPUT    The input NetCDF file name.
-  OUTPUT   The final output NetCDF file name.
+  CMD     A command-line command, e.g. './myscript.sh' or a quoted string
+          like 'python file.py'. The command should accept input file name(s)
+          followed by an output file name as command-line arguments.
+  INPUT   The input NetCDF file name(s).
+  OUTPUT  The output NetCDF file name.
 
 Optional arguments
 
-  -h   Print this message.
-  -f   If passed and dimension is a 'record' (i.e. unlimited) dimension, it is changed to fixed length.
-  -s   If passed, silent mode is enabled.
-  -k   If passed, temporary files are not deleted.
-  -r   If passed, order of INPUT and OUTPUT is reversed.
   -d=* The dimension name along which we split the file. Defaults to 'lat'.
-  -n=* The number of file pieces to generate. Defaults to '8'.
-  -p=* The maximum number of parallel processes. This defaults to the -n
-       argument but can also be smaller.
+  -n=* The number of file chunks to generate. Defaults to 8.
+  -p=* The maximum number of parallel processes. Defaults to the number of
+       file chunks but also be smaller.
+
+Flags
+
+  -h   Print this message.
+  -r   Reverse the order of OUTPUT and INPUT. The ncparallel call signature is
+       now 'ncparallel CMD OUTPUT INPUT1 [INPUT2 ...]' and CMD should accept an
+       output file name followed by input file name(s).
+  -f   Fix the record (i.e. 'unlimited') dimension in the OUTPUT file
+       and use mppnccombine rather than ncrcat if -d is a record dimension.
+  -k   Keep all temporary files and log files. By default, log files are only
+       kept if a process failed.
+  -s   Enable silent mode and suppress all messages.
+  -v   Enable verbose mode and print extra messages.
 "
 # Get arguments
-# TODO: Support for nsplit=1, just run the command!
+verbose=false
+dimname=lat # can also split along time dimension?
+fixrec=false
 keep=false
-reverse=false
-dname=lat # can also split along time dimension?
 nsplit=8
+reverse=false
 silent=false
 dir=${0%/*}
 source $dir/header.sh
 while [ $# -ne 0 ]; do
   case "$1" in
     -h) echo "$doc" >&2 && exit 0 ;;
-    -n=*) nsplit="${1#*=}" ;;
-    -d=*) dname="${1#*=}" ;;
-    -p=*) pmax="${1#*=}" ;;
-    -f) flags="-f" ;;
+    -n=*) nsplit=${1#*=} ;;
+    -d=*) dimname=${1#*=} ;;
+    -p=*) pmax=${1#*=} ;;
+    -f) fixrec=true ;;
     -k) keep=true ;;
-    -s) silent=true ;;
     -r) reverse=true ;;
+    -s) silent=true ;;
+    -v) verbose=true ;;
     -*) raise "Unknown argument ${1}." ;;
     *) args+=("$1") ;;
   esac
   shift
 done
+$verbose && flag_ncks='-D 2'
 [ -z "$pmax" ] && pmax=$nsplit # same as number of files
-[ ${#args[@]} -ne 3 ] && raise "Incorrect usage."
+
+# Set up exit trap
+cleanup() {
+  signal=$?
+  [ -n "$keep" ] && $keep && return
+  rm "${inputs_tmp[@]}" "${outputs_tmp[@]}" 2>/dev/null
+  [ "$signal" -eq 0 ] && rm "${logs[@]}" 2>/dev/null
+}
+trap cleanup EXIT  # remove files on exit or interruption!
+
 # Variables
-dir=${0%/*}
 cmd="${args[0]}"
+args=("${args[@]:1}")
+n=${#args[@]}
+[ $n -ge 2 ] || raise "At least 2 filenames are required, but got $n: ${args[*]}"
 if $reverse; then
-  input="${args[2]}"
-  output="${args[1]}"
+  inputs=("${args[@]:1:n-1}")
+  output="${args[0]}"
 else
-  input="${args[1]}"
-  output="${args[2]}"
+  inputs=("${args[@]::n-1}")
+  output="${args[n-1]}"
 fi
-[ -r "$input" ] || raise "Input file \"$input\" not found."
-# Time format
-if $silent; then
-  export TIMEFORMAT=$''
-else
-  export TIMEFORMAT=$'real %3lR user %3lU sys %3lS'
+for input in "${inputs[@]}"; do
+  [ -r "$input" ] || raise "Input file \"$input\" not found."
+done
+input="${inputs[0]}"
+
+# Time format and message
+export TIMEFORMAT=$'real %3R user %3U sys %3S'  # default format in seconds
+$silent && export TIMEFORMAT=''  # set to empty string
+$silent || echo "Running command: $cmd"
+$verbose && {
+  echo "Input file(s): ${inputs[*]}"
+  echo "Output file: $output"
+}
+
+# Special case
+if [ $nsplit -eq 1 ]; then
+  echo "Warning: You passed -n=1. Not dividing up file."
+  if $reverse; then
+    $cmd "$output" "${inputs[@]}"
+  else
+    $cmd "${inputs[@]}" "$output"
+  fi
+  exit  # with code from command
 fi
 
-# Divide into smaller files and collect names in a bash array
-# Format will be input.0000.nc, input.0001.nc, etc.
-# TODO: Divide up to n blocks
-$silent || echo "Dividing file: ${input##*/}"
-time {
-inputs=($($dir/ncdivide -p=$pmax -n=$nsplit -d=$dname $flags "$input"))
-[ $? -ne 0 ] && raise "ncdivide failed."
+# Get dimension size by parsing ncks
+# Could also parse ncdump, but this script requires NCO already so why not
+# See: http://nco.sourceforge.net/nco.html#ncdmnsz
+for input in "${inputs[@]}"; do
+  # Get dimension size
+  ndim=$(ncks --trd -m -M "$input" | grep -E -i ": ${dimname}, size =" | cut -f 7 -d ' ' | uniq | xargs)
+  [ -n "$ndim" ] \
+    || raise "Dimension ${dimname} not found in filename ${input}."
+  [[ $ndim =~ ^[0-9]+$ ]] \
+    || raise "Got invalid size ${ndim} for dimension ${dimname}."
+  [ $((ndim % nsplit)) -eq 0 ] \
+    || raise "Incompatible dimension size ${ndim} for ${nsplit} splits. Number of splits must evenly divide dimension size."
+  [ -n "$ndim_prev" ] && [ "$ndim_prev" -ne "$ndim" ] \
+    && raise "Dimension ${dimname} has length ${ndim_prev} in input file ${input_prev} but length ${ndim} in input file ${input}."
+  ndim_prev=$ndim
+  input_prev=$input
+done
+
+#-----------------------------------------------------------------------------#
+# Perform ncdivide inline
+#-----------------------------------------------------------------------------#
+# Divide files one by one
+
+# Helper function that runs each process
+run() {
+  # Arguments are the file index, output file, and input files.
+  local num output_num input_num inputs_num
+  local d1 d2 iflag_ncks input args
+  num="$1"
+  output_num="$2"
+  inputs_num=("${@:3}")
+  [ $# -ge 3 ] \
+    || raise "run() function requires at least 3 input args."
+  [ ${#inputs_num[@]} -eq ${#inputs[@]} ] \
+    || raise "Got ${#inputs[@]} input files but ${#inputs_num[@]} input files passed to run() function."
+
+  # Divide input file(s)
+  d1=$(((num - 1) * ndim / nsplit))  # e.g. nsplit=10, ndim=200, goes 0, 20, 40, 60
+  d2=$((num * ndim / nsplit - 1))  # e.g. nsplit=10, ndim=200, goes 19, 39, 59
+  echo "Copying slab $dimname,$d1,$d2 from ${inputs[*]} into ${inputs_num[*]}."
+  time {
+    for i in $(seq 1 ${#inputs[@]}); do
+      input=${inputs[i-1]}
+      input_num=${inputs_num[i-1]}
+      $fixrec && ncdump -h "$input" | grep 'UNLIMITED' | grep $dimname &>/dev/null \
+        && iflag_ncks="--fix_rec_dmn $dimname"  # required for mppnccombine
+      ncks -O -h $flag_ncks $iflag_ncks \
+        --no_tmp_fl --hdr_pad 1000 --no_abc \
+        -d "$dimname,$d1,$d2" "$input" "$input_num" >&2 \
+        || raise "Failed to split file ${input} with hyperslab $dimname,$d1,$d2."
+        # --bfr_sz 2097152 \
+    done
+  }
+
+  # Run command
+  if $reverse; then
+    args=("$output_num" "${inputs_num[@]}")
+  else
+    args=("${inputs_num[@]}" "$output_num" )
+  fi
+  echo "Running command: $cmd ${args[*]}"
+  time {
+    $cmd "${args[@]}" || raise "Command failed: $cmd ${args[*]}"
+    [ -r "$output_num" ] || raise "Command failed to generate output file ${output_num}."
+    ncatted -O -h \
+      -a NumFilesInSet,global,o,l,"$nsplit" \
+      -a domain_decomposition,$dimname,o,l,"1,$ndim,$((d1 + 1)),$((d2 + 1))" \
+      "$output_num" >&2 \
+      || raise "Failed to add nccombine attributes to output file ${output_num}."
+  }
 }
 
 # Generate background processes for each file, for example a python script
 # that creates a new NetCDF file from some input NetCDF file.
 # WARNING: Make sure that your command preserves the 'domain_decomposition' dimension
 # attribute and 'NumFilesInSet' global attribute on the output NetCDF file!
-i=1
+pnum=1
 time {
-$silent || echo "Running $cmd"
-$silent || echo "Input files: ${inputs[@]##*/}"
-for ifile in "${inputs[@]}"; do
-  # Output name
-  prefix="${output%.nc}" # just trim the extension
-  suffix="${ifile:${#ifile}-7}" # 0000.nc, 0001.nc, etc.
-  ofile="${prefix}.${suffix}"
-  # Run command
-  if $reverse; then
-    $cmd "$ofile" "$ifile" &>/dev/null & # trailing ampersand sends process to background
-  else
-    $cmd "$ifile" "$ofile" &>/dev/null & # trailing ampersand sends process to background
-  fi
-  pids+=($!) # store process IDs in another bash array
-  outputs+=("$ofile") # store output files in a bash array
-  if [ $i -eq $pmax ]; then
-    i=1; pwait "$cmd" "${pids[@]}"
-    unset pids
-  else
-    let i+=1
-  fi
-done
-pwait "$cmd" "${pids[@]}"
-$silent || echo "Output files: ${outputs[@]##*/}"
+  for fnum in $(seq 1 $nsplit); do
+    # Temporary file names
+    znum=$(printf "%04d" $((fnum - 1)))
+    log=${znum}.log
+    output_num=${output%.nc}.${znum}.nc
+    inputs_num=("${inputs[@]%.nc}")
+    inputs_num=("${inputs_num[@]/%/.${znum}.nc}")
+
+    # Run command in parallel along slice
+    # split "$fnum" "${inputs_num[@]}" &>$log &
+    run "$fnum" "$output_num" "${inputs_num[@]}" &>>$log &
+
+    # Store process IDs and output files
+    pids+=($!)
+    logs+=("$log")
+    inputs_tmp+=("${inputs_num[@]}")
+    outputs_tmp+=("$output_num")
+    if [ $pnum -eq $pmax ]; then
+      pnum=1
+      pwait "$cmd" "${pids[@]}"
+      unset pids
+    else
+      pnum=$((pnum + 1))
+    fi
+  done
+  pwait "$cmd" "${pids[@]}"
+}
+
+# Message showing average time for each process
+avgtime() {
+  cat "${logs[@]}" | awk "
+    c && ! --c
+    /${1}/ {c=1}
+  " | awk '{print $2" "$4" "$6}' | tr -d s | awk '
+    {real += $1; user += $2; sys += $3}
+    END {print "user " real / NR "s user " user / NR "s sys " sys / NR "s"}
+  '
+}
+$verbose && {
+  echo "Average split time"
+  avgtime '^Copying slab'
+  echo "Average command time"
+  avgtime '^Running command'
 }
 
 # Finally combine, and remove the temporary files
 # generated for parallel processing
 $silent || echo "Combining into file: ${output##*/}"
 time {
-$dir/nccombine "$output" "${outputs[@]}"
-[ $? -ne 0 ] && raise "nccombine failed."
+  $dir/nccombine "$output" "${outputs_tmp[@]}" \
+    || raise "nccombine failed."
 }
-! $keep && rm "${outputs[@]}" "${inputs[@]}"
 exit 0

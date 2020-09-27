@@ -1,7 +1,6 @@
 # Vim session files and swap files
+*.log
 .vimsession
 .*.sw[a-z]
-# Datasets
 *.nc
-# Binary
 *.x
