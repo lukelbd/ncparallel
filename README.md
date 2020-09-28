@@ -1,5 +1,5 @@
 What
-----
+====
 
 This repository introduces the shell command `ncparallel` for running arbitrary commands
 on NetCDF files in parallel by dividing and combining files along arbitrary dimensions.
@@ -9,7 +9,7 @@ along non-record dimensions (also see the
 the Modular Ocean Modelling system).
 
 Why
----
+===
 
 Using this tool won't always result in a speedup. For relatively fast commands, the
 overhead of creating a bunch of temporary NetCDF files can exceed the original command
@@ -28,7 +28,7 @@ However, this tool is exceedingly useful in two situations:
 <!-- This is great where your computation bottleneck is RAM due to large file sizes. -->
 
 Installation
-------------
+============
 
 Download this repository with
 ```bash
@@ -42,7 +42,7 @@ to your shell configuration file, usually named `$HOME/.bashrc` or `$HOME/.bash_
 does not exist, you can create it, and its contents should be run every time you open up a terminal.
 
 Usage
------
+=====
 
 Example usage is as follows:
 ```bash
@@ -92,9 +92,11 @@ The flags are as follows:
    - the bottleneck in your execution time is due to memory limitations. -->
 
 
-# Performance
+Performance
+===========
 
-## Intensive computation
+Intensive example
+-----------------
 
 Below are performance metrics for longitude-time
 [Randel and Held (1991)](https://journals.ametsoc.org/jas/article/48/5/688/22876/Phase-Speed-Spectra-of-Transient-Eddy-Fluxes-and)
@@ -161,7 +163,8 @@ Parallelization: 2
 real 178s user 249s sys 56s
 ```
 
-## Straightforward computation
+Simple example
+--------------
 
 Below are performance metrics for eddy heat and momentum flux calculations with the same
 dataset used above.
