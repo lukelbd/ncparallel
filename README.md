@@ -164,10 +164,12 @@ real 178s user 249s sys 56s
 ## Straightforward computation
 
 Below are performance metrics for eddy heat and momentum flux calculations with the same
-dataset used above. This time, the optimal performance was reached with only 4 latitude
-chunks. While `ncparallel` did improve performance, the improvement was marginal, and
-increasing the number of chunks yielded even worse performance than the performance
-without `ncparallel`.
+dataset used above.
+
+This time, the optimal performance was reached with only 4 latitude chunks. While
+`ncparallel` did improve performance, the improvement was marginal, and increasing the
+number of chunks yielded even worse performance than the performance without
+`ncparallel`.
 
 This test emphasizes the fact that `ncparallel` should be used only with careful
 consideration of the system architecture and the task at hand.
