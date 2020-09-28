@@ -96,7 +96,7 @@ The flags are as follows:
 
 ## Intensive computation
 
-Seeing is believing. Below are performance metrics for longitude-time
+Below are performance metrics for longitude-time
 [Randel and Held (1991)](https://journals.ametsoc.org/jas/article/48/5/688/22876/Phase-Speed-Spectra-of-Transient-Eddy-Fluxes-and)
 spectral decompositions of a 400MB file with 64 latitudes on a
 high-performance server with 32 cores and 32GB of RAM.
