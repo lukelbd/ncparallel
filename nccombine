@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-usage="nccombine OUTFILE FILE1 [FILE2 FILE3...]"
+usage="nccombine OUTPUT INPUT1 [INPUT2 INPUT3...]"
 doc="This script merges a NetCDF file along an arbitrary dimension using
 'mppnccombine', or along the time or record dimension using 'ncrcat'.
 
 Usage
 
   $usage
+
+Flags
+
+  -h  Print this message.
 "
 # Parse args
 which ncks &>/dev/null || raise "ncks not found. mppncdivide requires the NetCDF Operators (NCO) tools."
