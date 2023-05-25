@@ -67,10 +67,10 @@ For input file(s) named `input1.nc`, `input2.nc`, etc. and an output file named
 
 The optional arguments are as follows:
 
-* `-d=NAME`: The dimension name along which we split the file. Defaults to `lat`.
-* `-n=NUM`: The number of file chunks to generate. Defaults to `8`.
-* `-p=NUM`: The maximum number of parallel processes. Defaults to the `-n` argument but
-  can also be smaller.
+* `-d=NAME`: The dimension name along which we split the file. Default is `lat`.
+* `-n=NUM`: The number of file chunks to generate. Default is `8`.
+* `-p=NUM`: The maximum number of parallel processes. Default is the `-n` setting,
+  but this can also be smaller.
 
 If you do not want parallel processing and instead just want to split up the file into
 more manageable chunks, simply use `-p=1`. As explained above, this is very useful when
