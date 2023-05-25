@@ -1,8 +1,8 @@
 What
 ====
 
-This repository introduces the shell command `ncparallel` for running arbitrary commands
-on NetCDF files in parallel by dividing and combining files along arbitrary dimensions.
+This repository provides the shell command `ncparallel` for running arbitrary commands on
+NetCDF files in parallel by dividing then combining the files along arbitrary dimensions.
 We use the GFDL Flexible Modelling System `mppnccombine.c` tool for combining datasets
 along non-record dimensions (also see the
 [`mppnccombine-fast.c`](https://github.com/coecms/mppnccombine-fast) tool developed for
@@ -17,15 +17,13 @@ execution time.
 
 However, this tool is exceedingly useful in two situations:
 
-1. For very slow, laborious processes, the parallelization will result in a
-   very obvious speedup.
-2. For very large files, e.g. file sizes approaching or greater than the available RAM,
-   your computer may run out of memory and have to use the hard disk for "virtual" RAM.
-   This significantly slows down the process and can grind hard disk access to a crawl,
-   getting in the way of other processes. With this tool, you can use the `-p` and `-n`
-   flags to serially process the file in chunks, eliminating the memory bottleneck.
-
-<!-- This is great where your computation bottleneck is RAM due to large file sizes. -->
+1. For very slow, labor-intensive processes, the parallelization will result
+   in an obvious speedup.
+2. For very large files, e.g. approaching the available system RAM, your computer may
+   run out of memory and have to use the hard disk for "virtual" RAM. This significantly
+   slows down the process and can grind hard disk access to a crawl, getting in the way
+   of other processes. With this tool, you can use the `-p` and `-n` flags to serially
+   process the file in chunks, eliminating the memory bottleneck.
 
 Installation
 ============
